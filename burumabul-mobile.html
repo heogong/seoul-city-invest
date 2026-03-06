@@ -862,7 +862,8 @@ const CELLS = [
   // ── PINK: 강북 ───────────────────────────────────
   { id:8,  name:'방학동',    type:'prop', color:'pink',
     price:1350000000, rent:[1300000,2300000,3600000,5000000,6200000,7800000] },
-  { id:9,  name:'한전',      type:'utility',     icon:'⚡', price:150000000 },
+  { id:9,  name:'상계동',    type:'prop', color:'pink',
+    price:1050000000, rent:[1100000,1900000,3000000,4000000,5000000,6200000] },
   { id:10, name:'중계동',    type:'prop', color:'pink',
     price:1200000000, rent:[1200000,2100000,3300000,4500000,5500000,7000000] },
 
@@ -894,7 +895,8 @@ const CELLS = [
   // ── GREEN: 성동/강남 ─────────────────────────────
   { id:22, name:'왕십리',    type:'prop', color:'green',
     price:2400000000, rent:[2400000,4300000,7000000,9800000,12500000,15600000] },
-  { id:23, name:'수도사업소',type:'utility',     icon:'💧', price:150000000 },
+  { id:23, name:'성수동',    type:'prop', color:'green',
+    price:2500000000, rent:[2500000,4500000,7500000,10500000,13500000,17000000] },
   { id:24, name:'반포',      type:'prop', color:'green',
     price:4000000000, rent:[3000000,5500000,9500000,14000000,18500000,24000000] },
 
@@ -1832,7 +1834,7 @@ function handleUtility(playerIdx, isDouble) {
   } else {
     const owner = state.players[prop.owner];
     const die = Math.floor(Math.random()*6)+1 + Math.floor(Math.random()*6)+1;
-    const both = allOwnedBy(prop.owner).filter(({cellId})=>[9,23].includes(cellId)).length >= 2;
+    const both = false; // 유틸리티 칸 없음
     // 전기·수도 요금: 주사위 합 × (단독 1,500만 / 독점 4,000만)
     const rent = die * (both ? 40000000 : 15000000);
 
@@ -2366,8 +2368,8 @@ const CELL_BLD = {
   19: { buy:[0, 200000000], sell:[0, 180000000] },
   26: { buy:[0, 200000000], sell:[0, 180000000] },
   // 유틸리티 (매매가 1.5억, 매도가 1.35억)
-  9:  { buy:[0, 150000000], sell:[0, 135000000] },
-  23: { buy:[0, 150000000], sell:[0, 135000000] },
+  9:  { buy:[0,  400000000, 1050000000, 3500000000], sell:[0,  360000000,  945000000, 3150000000] },
+  23: { buy:[0, 1000000000, 2500000000,10000000000], sell:[0,  900000000, 2250000000, 9000000000] },
 };
 
 
@@ -2744,11 +2746,11 @@ function aiUpgradeBuildings() {
 const COLOR_GROUPS = [
   { color:'brown',    label:'노원/도봉', cells:[1,3] },
   { color:'lightblue',label:'관악/강서', cells:[4,6] },
-  { color:'pink',     label:'강북',      cells:[8,10] },
+  { color:'pink',     label:'강북',      cells:[8,9,10] },
   { color:'orange',   label:'영등포',    cells:[11,13] },
   { color:'red',      label:'용산/중구', cells:[15,17] },
   { color:'yellow',   label:'마포',      cells:[18,20] },
-  { color:'green',    label:'성동/강남', cells:[22,24] },
+  { color:'green',    label:'성동/강남', cells:[22,23,24] },
   { color:'darkblue', label:'강남',      cells:[25,27] },
 ];
 
