@@ -853,7 +853,7 @@ const CELLS = [
   // ── LIGHTBLUE: 관악/강서 ─────────────────────────
   { id:4,  name:'화곡동',    type:'prop', color:'lightblue',
     price:1000000000, rent:[1000000,1700000,2700000,3600000,4500000,5600000] },
-  { id:5,  name:'지하철역',  type:'transport',   icon:'🚇', price:200000000 },
+  { id:5,  name:'로또',      type:'lotto',        icon:'🎰' },
   { id:6,  name:'봉천동',    type:'prop', color:'lightblue',
     price:950000000,  rent:[900000,1600000,2500000,3400000,4200000,5300000] },
 
@@ -903,7 +903,7 @@ const CELLS = [
   // ── DARKBLUE: 강남 ───────────────────────────────
   { id:25, name:'대치동',    type:'prop', color:'darkblue',
     price:4000000000, rent:[3200000,6000000,10500000,15500000,21000000,27500000] },
-  { id:26, name:'KTX역',     type:'transport',   icon:'🚄', price:200000000 },
+  { id:26, name:'청약',      type:'cheongak',     icon:'🏠' },
   { id:27, name:'압구정',    type:'prop', color:'darkblue',
     price:5000000000, rent:[4000000,7500000,13500000,20000000,28000000,38000000] },
 ];
@@ -2113,7 +2113,7 @@ function applyCard(card, playerIdx) {
       opponent.money -= card.amount;
       break;
     case 'neartransport': {
-      const transports = [5, 12, 19, 26];
+      const transports = [12, 19];
       const near = transports.find(t => t > cp.pos) || transports[0];
       if(near <= cp.pos) cp.money += cp.job.salary; // passed go
       cp.pos = near;
@@ -2363,10 +2363,8 @@ const CELL_BLD = {
   25: { buy:[0, 1400000000, 4000000000,18000000000], sell:[0, 1260000000, 3600000000,16200000000] },
   27: { buy:[0, 1800000000, 5000000000,25000000000], sell:[0, 1620000000, 4500000000,22500000000] },
   // 교통 (매매가 2억, 매도가 1.8억)
-  5:  { buy:[0, 200000000], sell:[0, 180000000] },
   12: { buy:[0, 200000000], sell:[0, 180000000] },
   19: { buy:[0, 200000000], sell:[0, 180000000] },
-  26: { buy:[0, 200000000], sell:[0, 180000000] },
   // 유틸리티 (매매가 1.5억, 매도가 1.35억)
   9:  { buy:[0,  400000000, 1050000000, 3500000000], sell:[0,  360000000,  945000000, 3150000000] },
   23: { buy:[0, 1000000000, 2500000000,10000000000], sell:[0,  900000000, 2250000000, 9000000000] },
