@@ -873,7 +873,7 @@ const CELLS = [
   { id:13, name:'여의도',    type:'prop', color:'orange',
     price:2200000000, rent:[1700000,3000000,4800000,6600000,8300000,10400000] },
 
-  { id:14, name:'인센티브',  type:'incentive',   icon:'💰' },
+  { id:14, name:'코인거래소', type:'coinexchange', icon:'🪙' },
 
   // ── RED: 용산/중구 ───────────────────────────────
   { id:15, name:'명동',      type:'prop', color:'red',
@@ -1480,7 +1480,7 @@ function movePlayer(playerIdx, steps, isDouble) {
     }
 
     const oldPos = cp.pos;
-    cp.pos = (cp.pos + 1) % 40;
+    cp.pos = (cp.pos + 1) % 28;
     remaining--;
 
     // 출발점 통과 체크
