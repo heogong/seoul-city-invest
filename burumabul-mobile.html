@@ -1,0 +1,3389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>서울 시티 인베스트 (모바일)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Jua&family=Nanum+Gothic:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #1a0a00;
+    --board-bg: #f5e6c8;
+    --board-border: #8b4513;
+    --green: #2d7a3a;
+    --red: #c0392b;
+    --blue: #2471a3;
+    --yellow: #d4ac0d;
+    --purple: #7d3c98;
+    --orange: #ca6f1e;
+    --teal: #148f77;
+    --pink: #e91e8c;
+    --cell-w: 40px;
+    --cell-h: 40px;
+    --corner: 50px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at 20% 20%, #3d1a00 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 80%, #1a0033 0%, transparent 50%);
+    min-height: 100vh;
+    font-family: 'Nanum Gothic', sans-serif;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px;
+    gap: 8px;
+  }
+
+  h1 {
+    font-family: 'Jua', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 6px;
+    background: linear-gradient(135deg, #f5c842, #e8860a, #f5c842);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+    filter: drop-shadow(0 2px 8px rgba(245,200,66,0.5));
+  }
+
+  .game-area {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* ===== BOARD ===== */
+  .board {
+    position: relative;
+    width: calc(var(--corner)*2 + var(--cell-w)*6);
+    height: calc(var(--corner)*2 + var(--cell-h)*6);
+    background: var(--board-bg);
+    border: 4px solid var(--board-border);
+    border-radius: 4px;
+    box-shadow: 0 0 40px rgba(245,200,66,0.3), inset 0 0 20px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+
+  .board-center {
+    position: absolute;
+    top: var(--corner);
+    left: var(--corner);
+    right: var(--corner);
+    bottom: var(--corner);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fdf6e3, #fce8b2);
+    border: 2px solid var(--board-border);
+    gap: 6px;
+  }
+
+  .center-title {
+    font-family: 'Jua', sans-serif;
+    font-size: 0.85rem;
+    color: #8b1a00;
+    letter-spacing: 4px;
+  }
+
+  .center-subtitle {
+    font-size: 0.5rem;
+    color: #8b4513;
+    letter-spacing: 2px;
+  }
+
+  .dice-area {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .die {
+    width: 36px;
+    height: 36px;
+    background: #fff;
+    border: 3px solid #333;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    padding: 6px;
+    gap: 2px;
+    box-shadow: 3px 3px 0 #333;
+    transition: transform 0.1s;
+  }
+
+  .die.rolling {
+    animation: roll 0.5s ease-out;
+  }
+
+  .die-dot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #222;
+  }
+
+  .die-dot.empty {
+    background: transparent;
+  }
+
+  @keyframes roll {
+    0%   { transform: rotate(0deg) scale(1); }
+    25%  { transform: rotate(90deg) scale(1.2); }
+    50%  { transform: rotate(180deg) scale(0.9); }
+    75%  { transform: rotate(270deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+
+  .btn-roll {
+    font-family: 'Jua', sans-serif;
+    font-size: 0.78rem;
+    padding: 7px 10px;
+    background: linear-gradient(135deg, #e8860a, #f5c842);
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    color: #1a0a00;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(245,200,66,0.4);
+    transition: transform 0.1s, box-shadow 0.1s;
+    margin-top: 4px;
+  }
+
+  .btn-roll:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(245,200,66,0.5); }
+  .btn-roll:active { transform: translateY(1px); }
+  .btn-roll:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ===== CELLS ===== */
+  .cell {
+    position: absolute;
+    border: 1.5px solid #8b4513;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.42rem;
+    text-align: center;
+    overflow: hidden;
+    cursor: default;
+    background: #fdf6e3;
+    transition: background 0.2s;
+  }
+
+  .cell:hover { filter: brightness(0.95); }
+
+  .cell .color-bar {
+    width: 100%;
+    height: 10px;
+    flex-shrink: 0;
+  }
+
+  .cell .cell-name {
+    font-weight: 800;
+    color: #2c1700;
+    line-height: 1.2;
+    padding: 1px 2px;
+    font-size: 0.45rem;
+  }
+
+  .cell .cell-price {
+    color: #8b1a00;
+    font-size: 0.42rem;
+    font-weight: 700;
+  }
+
+  .cell .cell-icon {
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  /* corner cells */
+  .cell.corner {
+    width: var(--corner);
+    height: var(--corner);
+  }
+
+  /* bottom row */
+  .cell.bottom {
+    width: var(--cell-w);
+    height: var(--corner);
+    bottom: 0;
+  }
+
+  /* top row */
+  .cell.top {
+    width: var(--cell-w);
+    height: var(--corner);
+    top: 0;
+    flex-direction: column-reverse;
+  }
+
+  .cell.top .color-bar { order: -1; }
+
+  /* left col */
+  .cell.left {
+    width: var(--corner);
+    height: var(--cell-h);
+    left: 0;
+    flex-direction: row-reverse;
+  }
+
+  .cell.left .color-bar {
+    width: 10px;
+    height: 100%;
+  }
+
+  /* right col */
+  .cell.right {
+    width: var(--corner);
+    height: var(--cell-h);
+    right: 0;
+    flex-direction: row;
+  }
+
+  .cell.right .color-bar {
+    width: 10px;
+    height: 100%;
+  }
+
+  /* player tokens */
+  .token {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    position: absolute;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    z-index: 10;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.7);
+  }
+
+  /* ownership dots */
+  .owned-dot {
+    display: none;
+  }
+
+  .building-icons {
+    display: none;
+  }
+
+  /* 부동산 배지 — 최상단 (color-bar 위) */
+  .cell-prop-badge {
+    width: 100%;
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    padding: 2px 1px;
+    line-height: 1.2;
+    flex-shrink: 0;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    order: -2;
+  }
+
+  /* 시세 변동 배지 — 부동산 배지 바로 아래, color-bar 위 */
+  .cell-market-badge {
+    width: 100%;
+    text-align: center;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 1px 1px;
+    line-height: 1.2;
+    flex-shrink: 0;
+    order: -1;
+  }
+
+  /* left/right 세로 셀 */
+  .cell.left .cell-prop-badge,
+  .cell.right .cell-prop-badge {
+    width: auto;
+    height: auto;
+    writing-mode: vertical-rl;
+    padding: 2px 1px;
+    font-size: 0.6rem;
+    order: -2;
+  }
+
+  .cell.left .cell-market-badge,
+  .cell.right .cell-market-badge {
+    width: auto;
+    writing-mode: vertical-rl;
+    padding: 1px 0;
+    font-size: 0.55rem;
+    order: -1;
+  }
+
+  /* top 셀 — flex-direction: column-reverse이므로 order 반전 */
+  .cell.top .cell-prop-badge  { order: 2; }
+  .cell.top .cell-market-badge { order: 1; }
+
+  /* ===== SIDE PANEL ===== */
+  .panel {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 14px 16px;
+    backdrop-filter: blur(4px);
+  }
+
+  .card h3 {
+    font-family: 'Jua', sans-serif;
+    font-size: 1rem;
+    color: #f5c842;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+
+  .player-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .player-info:last-child { border-bottom: none; }
+
+  .player-token-display {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    border: 2px solid rgba(255,255,255,0.4);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .player-details { flex: 1; min-width: 0; }
+  .player-name { font-weight: 800; font-size: 0.88rem; }
+  .player-money { font-size: 0.82rem; color: #f5c842; font-weight: 700; white-space: nowrap; }
+  .player-status { font-size: 0.68rem; color: #aaa; margin-top: 2px; }
+
+  .player-job-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    background: rgba(245,200,66,0.12);
+    border: 1px solid rgba(245,200,66,0.3);
+    color: #f5c842;
+    border-radius: 20px;
+    padding: 1px 8px;
+    margin: 3px 0 2px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* 자산 비율 바 */
+  .wealth-bar-wrap {
+    display: flex;
+    height: 5px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.08);
+    margin-top: 5px;
+  }
+  .wealth-bar { height: 100%; transition: width 0.6s ease; }
+
+  .log-box {
+    max-height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .log-entry {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    line-height: 1.4;
+    color: #ddd;
+  }
+
+  .log-entry.important {
+    background: rgba(245,200,66,0.15);
+    color: #f5c842;
+    font-weight: 700;
+  }
+
+  .log-entry.bad {
+    background: rgba(192,57,43,0.2);
+    color: #ff8080;
+  }
+
+  /* 구역 점령 현황 */
+  .territory-row { margin-bottom: 9px; }
+  .territory-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 3px;
+  }
+  .territory-label {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 0.73rem; color: #ddd;
+  }
+  .territory-dot {
+    width: 9px; height: 9px;
+    border-radius: 2px; flex-shrink: 0;
+  }
+  .territory-counts { font-size: 0.65rem; color: #aaa; display: flex; gap: 6px; }
+  .territory-bar-wrap {
+    display: flex; height: 7px; border-radius: 4px; overflow: hidden;
+    background: rgba(255,255,255,0.07);
+  }
+  .territory-buildings {
+    display: flex; gap: 4px; margin-top: 3px; flex-wrap: wrap;
+  }
+  .territory-building-tag {
+    font-size: 0.62rem; padding: 1px 5px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+
+  /* 게임 종료 결산 모달 */
+  .stats-winner-banner {
+    text-align: center; padding: 12px 0 8px;
+  }
+  .stats-winner-icon { font-size: 3rem; line-height: 1; }
+  .stats-winner-name {
+    font-family: 'Jua', sans-serif;
+    font-size: 1.4rem; color: #8b1a00; margin: 4px 0 2px;
+  }
+  .stats-turns { font-size: 0.78rem; color: #999; }
+  .stats-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .stats-table th {
+    font-size: 0.7rem; color: #888; padding: 4px 6px;
+    border-bottom: 1px solid rgba(139,69,19,0.3);
+  }
+  .stats-table td { padding: 5px 6px; font-size: 0.78rem; }
+  .stats-table tr:not(:last-child) td {
+    border-bottom: 1px solid rgba(139,69,19,0.15);
+  }
+  .stats-label { color: #777; }
+  .stats-my { text-align: center; color: #c0392b; font-weight: 700; }
+  .stats-ai { text-align: center; color: #2471a3; font-weight: 700; }
+  .stats-highlight td { background: rgba(139,69,19,0.08); }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: linear-gradient(135deg, #fdf6e3, #fce8b2);
+    border: 3px solid #8b4513;
+    border-radius: 16px;
+    padding: 28px 32px;
+    max-width: 360px;
+    width: 90%;
+    color: #2c1700;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+  }
+
+  .modal h2 {
+    font-family: 'Jua', sans-serif;
+    font-size: 1.5rem;
+    color: #8b1a00;
+    margin-bottom: 10px;
+  }
+
+  .modal p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 16px; }
+
+  .modal-btns { display: flex; gap: 10px; justify-content: center; }
+
+  .btn-yes, .btn-no {
+    font-family: 'Jua', sans-serif;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: transform 0.1s;
+  }
+
+  .btn-yes {
+    background: linear-gradient(135deg, #2d7a3a, #4caf50);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(45,122,58,0.4);
+  }
+
+  .btn-no {
+    background: linear-gradient(135deg, #c0392b, #e74c3c);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(192,57,43,0.4);
+  }
+
+  .btn-yes:hover, .btn-no:hover { transform: translateY(-2px); }
+
+  .btn-ok {
+    font-family: 'Jua', sans-serif;
+    padding: 10px 40px;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #e8860a, #f5c842);
+    color: #1a0a00;
+    box-shadow: 0 4px 12px rgba(245,200,66,0.4);
+    transition: transform 0.1s;
+  }
+  .btn-ok:hover { transform: translateY(-2px); }
+
+  .card-display {
+    background: linear-gradient(135deg, #1a3a5c, #0d2137);
+    border: 2px solid #4a90d9;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 12px;
+    color: #fff;
+  }
+
+  .card-display.chance { background: linear-gradient(135deg, #7d3c98, #4a235a); border-color: #c39bd3; }
+  .card-display.public  { background: linear-gradient(135deg, #1a5c2a, #0d2e14); border-color: #82e0aa; }
+
+  .card-display .card-type { font-size: 0.75rem; letter-spacing: 2px; opacity: 0.7; margin-bottom: 6px; }
+  .card-display .card-text { font-size: 1rem; font-weight: 700; line-height: 1.5; }
+
+  .turn-indicator {
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 4px;
+  }
+
+  .turn-player { background: rgba(245,200,66,0.2); color: #f5c842; }
+  .turn-ai { background: rgba(100,150,255,0.2); color: #89b4ff; }
+
+  .building-btn {
+    font-family: 'Jua', sans-serif;
+    font-size: 0.8rem;
+    padding: 5px 12px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin: 2px;
+  }
+
+  .building-btn:hover { background: rgba(255,255,255,0.2); }
+
+  .properties-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .prop-tag {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .prop-tag:hover { transform: scale(1.05); }
+
+  .game-over-banner {
+    font-family: 'Jua', sans-serif;
+    font-size: 2rem;
+    text-align: center;
+    color: #f5c842;
+    text-shadow: 0 0 20px rgba(245,200,66,0.8);
+    animation: pulse 1s infinite alternate;
+  }
+
+  @keyframes pulse {
+    from { opacity: 0.7; transform: scale(0.98); }
+    to   { opacity: 1;   transform: scale(1.02); }
+  }
+
+  /* 턴 알림 오버레이 */
+  #turnOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+  }
+  #turnOverlay.show { display: flex; }
+  #turnOverlayText {
+    font-family: 'Jua', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 4px;
+    animation: turnPop 0.4s ease-out;
+  }
+  #turnOverlaySub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 2px;
+  }
+  @keyframes turnPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    70%  { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1);   opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-area">
+  <canvas id="boardCanvas" style="display:none"></canvas>
+  <div class="board" id="board">
+    <div class="board-center">
+      <div class="center-title">서울 시티 인베스트</div>
+      <div class="center-subtitle">KOREA EDITION</div>
+      <div class="dice-area">
+        <div class="die" id="die1"></div>
+        <div class="die" id="die2"></div>
+      </div>
+      <button class="btn-roll" id="btnRoll" onclick="rollDice()">🎲 주사위 굴리기</button>
+      <button id="btnSellProp" onclick="openSellModal()"
+        style="display:none;margin-top:6px;width:100%;padding:8px 0;
+        background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;
+        border:none;border-radius:20px;font-family:Jua,sans-serif;
+        font-size:0.85rem;font-weight:bold;cursor:pointer">
+        🏷️ 부동산 매도
+      </button>
+      <div id="turnIndicator" class="turn-indicator turn-player">내 차례</div>
+      <div id="moveCounter" style="font-size:0.75rem;color:#f5c842;min-height:18px;margin-top:2px"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="card" id="playerCard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3 style="margin:0">👤 플레이어 현황</h3>
+        <span id="turnCounter" style="font-size:0.75rem;color:#aaa"></span>
+      </div>
+      <div id="turnProgressWrap" style="margin-bottom:10px;display:none">
+        <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#aaa;margin-bottom:3px">
+          <span>⏰ 턴 진행</span>
+          <span id="turnProgressLabel"></span>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden">
+          <div id="turnProgressBar" style="height:100%;background:linear-gradient(90deg,#27ae60,#f1c40f,#e74c3c);border-radius:4px;transition:width 0.4s"></div>
+        </div>
+        <div style="font-size:0.68rem;color:#aaa;margin-top:3px;text-align:right">🏆 순자산 100억 또는 50바퀴 후 종료</div>
+      </div>
+      <div class="player-info" id="playerInfo0">
+        <div class="player-token-display" id="myTokenDisplay" style="background:#e74c3c">🚀</div>
+        <div class="player-details">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="player-name">나 (플레이어)</div>
+            <div class="player-money" id="myMoney">💰 0원</div>
+          </div>
+          <div class="player-job-badge" id="myJob">📚 취준생 · 월급 없음</div>
+          <div class="player-status" id="myStatus">출발지 대기중</div>
+          <div id="myLoanInfo" style="display:none;font-size:0.78rem;color:#e74c3c;margin-top:4px"></div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button id="btnLoan" onclick="openLoanModal()" style="flex:1;padding:4px 0;font-size:0.78rem;background:#e67e22;color:#fff;border:none;border-radius:6px;cursor:pointer;display:none">🏦 대출</button>
+            <button id="btnRepay" onclick="openRepayModal()" style="flex:1;padding:4px 0;font-size:0.78rem;background:#27ae60;color:#fff;border:none;border-radius:6px;cursor:pointer;display:none">💳 상환</button>
+          </div>
+          <div class="wealth-bar-wrap">
+            <div class="wealth-bar" id="myWealthBar" style="width:50%;background:#e74c3c"></div>
+            <div class="wealth-bar ai-bar" id="aiWealthBar" style="width:50%;background:#3498db"></div>
+          </div>
+        </div>
+      </div>
+      <div class="player-info" id="playerInfo1">
+        <div class="player-token-display" id="aiTokenDisplay" style="background:#3498db">🤖</div>
+        <div class="player-details">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="player-name">AI</div>
+            <div class="player-money" id="aiMoney">💰 0원</div>
+          </div>
+          <div class="player-job-badge" id="aiJob">📚 취준생 · 월급 없음</div>
+          <div class="player-status" id="aiStatus">출발지 대기중</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="buildCard">
+      <h3>🏠 부동산 매매</h3>
+      <div id="buildContent" style="font-size:0.8rem;color:#aaa">내 땅에 도달하면 부동산을 매매할 수 있습니다.</div>
+    </div>
+
+    <div class="card">
+      <h3>🗺️ 구역 점령 현황</h3>
+      <div id="territoryContent" style="font-size:0.78rem"></div>
+    </div>
+
+    <div class="card">
+      <h3>📋 게임 로그</h3>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modal">
+    <h2 id="modalTitle">알림</h2>
+    <div id="modalContent"></div>
+    <div class="modal-btns" id="modalBtns"></div>
+  </div>
+</div>
+
+<!-- Turn Announce Overlay -->
+<div id="turnOverlay">
+  <div id="turnOverlayText">내 차례!</div>
+  <div id="turnOverlaySub">주사위를 준비하세요...</div>
+</div>
+
+<script>
+// ==================== GAME DATA ====================
+// 주사위 점 배치: 3x3 그리드 인덱스 (0=좌상, 1=중상, 2=우상, 3=좌중, 4=중중, 5=우중, 6=좌하, 7=중하, 8=우하)
+const DIE_DOTS = {
+  1: [4],
+  2: [2, 6],
+  3: [2, 4, 6],
+  4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8],
+  6: [0, 2, 3, 5, 6, 8],
+};
+
+function renderDie(elId, value) {
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.innerHTML = '';
+  const active = DIE_DOTS[value] || [];
+  for(let i = 0; i < 9; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'die-dot' + (active.includes(i) ? '' : ' empty');
+    el.appendChild(dot);
+  }
+}
+
+const fmt = n => {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? '-' : '';
+  if (abs >= 100000000) {
+    const uk = abs / 100000000;
+    const rem = Math.round((abs % 100000000) / 10000);
+    if (rem > 0) return sign + uk.toFixed(0) + '억 ' + rem.toLocaleString('ko-KR') + '만원';
+    return sign + uk.toFixed(0) + '억원';
+  } else if (abs >= 10000) {
+    return sign + Math.round(abs / 10000).toLocaleString('ko-KR') + '만원';
+  }
+  return sign + abs.toLocaleString('ko-KR') + '원';
+};
+
+const COLORS = {
+  brown: '#8b4513', lightblue: '#5dade2', pink: '#e91e8c',
+  orange: '#e67e22', red: '#c0392b', yellow: '#f1c40f',
+  green: '#27ae60', darkblue: '#1a5276', purple: '#7d3c98',
+  teal: '#148f77'
+};
+
+// ====================================================
+// 서울 시티 인베스트 — 실제 서울 부동산 시세 (2025~2026 기준)
+// 매매가: 국토부 실거래가 / 한국부동산원 KB시세 기반
+// 통행료: 실제 아파트 84㎡ 보증금 1000만 기준 월세
+//   [토지, 빌라(소형), 아파트(중형), 빌딩(대형단지)]
+// ====================================================
+const CELLS = [
+  // ── 28칸 모바일 보드 ──────────────────────────────
+  { id:0,  name:'출발',      type:'go',          icon:'🏁', price:0 },
+
+  // ── BROWN: 노원/도봉 ──────────────────────────────
+  { id:1,  name:'수유동',    type:'prop', color:'brown',
+    price:600000000,  rent:[500000,1000000,1600000,2000000,2500000,3000000] },
+  { id:2,  name:'찬스',      type:'chance',      icon:'❓' },
+  { id:3,  name:'도봉동',    type:'prop', color:'brown',
+    price:700000000,  rent:[700000,1200000,1800000,2400000,3000000,3600000] },
+
+  // ── LIGHTBLUE: 관악/강서 ─────────────────────────
+  { id:4,  name:'화곡동',    type:'prop', color:'lightblue',
+    price:1000000000, rent:[1000000,1700000,2700000,3600000,4500000,5600000] },
+  { id:5,  name:'지하철역',  type:'transport',   icon:'🚇', price:200000000 },
+  { id:6,  name:'봉천동',    type:'prop', color:'lightblue',
+    price:950000000,  rent:[900000,1600000,2500000,3400000,4200000,5300000] },
+
+  { id:7,  name:'국세청',    type:'jail',        icon:'🏛️' },
+
+  // ── PINK: 강북 ───────────────────────────────────
+  { id:8,  name:'방학동',    type:'prop', color:'pink',
+    price:1350000000, rent:[1300000,2300000,3600000,5000000,6200000,7800000] },
+  { id:9,  name:'한전',      type:'utility',     icon:'⚡', price:150000000 },
+  { id:10, name:'중계동',    type:'prop', color:'pink',
+    price:1200000000, rent:[1200000,2100000,3300000,4500000,5500000,7000000] },
+
+  // ── ORANGE: 영등포 ───────────────────────────────
+  { id:11, name:'영등포',    type:'prop', color:'orange',
+    price:1700000000, rent:[1600000,2800000,4500000,6200000,7800000,9800000] },
+  { id:12, name:'버스터미널',type:'transport',   icon:'🚌', price:200000000 },
+  { id:13, name:'여의도',    type:'prop', color:'orange',
+    price:2200000000, rent:[1700000,3000000,4800000,6600000,8300000,10400000] },
+
+  { id:14, name:'인센티브',  type:'incentive',   icon:'💰' },
+
+  // ── RED: 용산/중구 ───────────────────────────────
+  { id:15, name:'명동',      type:'prop', color:'red',
+    price:2200000000, rent:[2000000,3600000,5800000,8000000,10000000,12500000] },
+  { id:16, name:'찬스',      type:'chance',      icon:'❓' },
+  { id:17, name:'인사동',    type:'prop', color:'red',
+    price:2400000000, rent:[2100000,3800000,6200000,8600000,10800000,13500000] },
+
+  // ── YELLOW: 마포 ─────────────────────────────────
+  { id:18, name:'합정',      type:'prop', color:'yellow',
+    price:2200000000, rent:[2200000,4000000,6500000,9000000,11300000,14200000] },
+  { id:19, name:'공항버스',  type:'transport',   icon:'✈️', price:200000000 },
+  { id:20, name:'신촌',      type:'prop', color:'yellow',
+    price:2300000000, rent:[2300000,4200000,6800000,9400000,11800000,14800000] },
+
+  { id:21, name:'세무조사',  type:'gotojail',    icon:'👮' },
+
+  // ── GREEN: 성동/강남 ─────────────────────────────
+  { id:22, name:'왕십리',    type:'prop', color:'green',
+    price:2400000000, rent:[2400000,4300000,7000000,9800000,12500000,15600000] },
+  { id:23, name:'수도사업소',type:'utility',     icon:'💧', price:150000000 },
+  { id:24, name:'반포',      type:'prop', color:'green',
+    price:4000000000, rent:[3000000,5500000,9500000,14000000,18500000,24000000] },
+
+  // ── DARKBLUE: 강남 ───────────────────────────────
+  { id:25, name:'대치동',    type:'prop', color:'darkblue',
+    price:4000000000, rent:[3200000,6000000,10500000,15500000,21000000,27500000] },
+  { id:26, name:'KTX역',     type:'transport',   icon:'🚄', price:200000000 },
+  { id:27, name:'압구정',    type:'prop', color:'darkblue',
+    price:5000000000, rent:[4000000,7500000,13500000,20000000,28000000,38000000] },
+];
+
+// 💡 카드 금액: 실제 2025~2026년 물가 기준 (억 단위)
+const CHANCE_CARDS = [
+  { text: '출발점으로 이동! 월급 수령!', type:'move', target:0, bonus:0 },
+  { text: '국세청 탈출 카드 획득!', type:'jailbreak' },
+  { text: '삼성전자 주식 급등! 배당금 5,000만원 수령.', type:'money', amount:50000000 },
+  { text: '건물 안전진단 수리비: 집 1채당 3,000만원, 빌딩 1개당 1억원 납부.', type:'repair', house:30000000, hotel:100000000 },
+  { text: '코인 투자 수익 실현! 1억원 수령.', type:'money', amount:100000000 },
+  { text: '종합소득세 추가 고지: 3,000만원 납부.', type:'money', amount:-30000000 },
+  { text: '세무조사 대상 선정! 국세청으로 직행!', type:'gotojail' },
+  { text: '가장 가까운 교통 시설로 이동!', type:'neartransport' },
+  { text: '소송 합의금! 상대방에게 5,000만원 수령.', type:'fromopponent', amount:50000000 },
+];
+
+const COMMUNITY_CARDS = [
+  { text: '국세청 세금 환급! 2,000만원 수령.', type:'money', amount:20000000 },
+  { text: '생일 파티! 상대방에게 1,000만원씩 받습니다.', type:'fromopponent', amount:10000000 },
+  { text: '응급실 입원·수술비: 2,000만원 납부.', type:'money', amount:-20000000 },
+  { text: '부동산 중개 수수료 수입! 8,000만원 수령.', type:'money', amount:80000000 },
+  { text: '과태료 부과: 2,000만원 납부.', type:'money', amount:-20000000 },
+  { text: '재산세 고지서 도착: 5,000만원 납부.', type:'money', amount:-50000000 },
+  { text: '국세청 탈출 카드 획득!', type:'jailbreak' },
+  { text: '아파트 장기수선충당금 정산: 3,000만원 납부.', type:'money', amount:-30000000 },
+  { text: '출발점으로 이동! 월급 수령.', type:'move', target:0, bonus:0 },
+  { text: '연말정산 환급! 1,500만원 수령.', type:'money', amount:15000000 },
+];
+
+// ==================== 직업 시스템 ====================
+// 💡 월급 기준: 실제 2025년 월 세후 소득 기준
+// 편의점 알바 주 5일 8h: 209만 / 배달라이더 250~350만 / 일반 회사원 300~400만
+// IT 개발자 450~600만 / 의사 900~1100만 / 건물주 임대수입 2000만+
+const JOBS = [
+  { name:'취준생',       icon:'📚', salary:0,        desc:'아직 취업 전이에요. 월급이 없습니다.' },
+  { name:'편의점 알바',  icon:'🏪', salary:2100000,  desc:'2026년 최저시급 10,320원, 주 5일 풀타임 209만원.' },
+  { name:'배달 라이더',  icon:'🛵', salary:2800000,  desc:'하루 10시간 풀가동, 플랫폼 수수료 제하고 280만원.' },
+  { name:'프리랜서',     icon:'💻', salary:3500000,  desc:'프로젝트 수주 성공! 이번 달 350만원 수령.' },
+  { name:'일반 회사원',  icon:'👔', salary:3800000,  desc:'중소기업 대리급, 세후 380만원 월급.' },
+  { name:'공무원',       icon:'🏛️', salary:4200000,  desc:'7급 5년차 기준, 수당 포함 세후 420만원.' },
+  { name:'선생님',       icon:'🎓', salary:4500000,  desc:'중등교사 10년차, 수당 포함 세후 450만원.' },
+  { name:'간호사',       icon:'🩺', salary:4800000,  desc:'대형병원 3년차, 야근·당직 수당 포함 480만원.' },
+  { name:'자영업자',     icon:'🍜', salary:4000000,  desc:'동네 식당 사장, 인건비 빼고 이번 달 400만원 순이익.' },
+  { name:'IT 개발자',    icon:'⌨️', salary:5500000,  desc:'중견 IT기업 5년차 개발자, 세후 550만원.' },
+  { name:'약사',         icon:'💊', salary:6000000,  desc:'동네 약국 약사, 세후 600만원 수령.' },
+  { name:'변호사',       icon:'⚖️', salary:8000000,  desc:'중형 로펌 소속, 수임료 포함 세후 800만원.' },
+  { name:'의사',         icon:'🏥', salary:11000000, desc:'전문의 개원의, 세후 1,100만원.' },
+  { name:'부동산 중개사',icon:'🏠', salary:7000000,  desc:'강남 계약 성사! 중개 수수료 700만원 수령.' },
+  { name:'유튜버',       icon:'📹', salary:5000000,  desc:'구독자 50만, 광고·협찬 수입 500만원.' },
+  { name:'스타트업 CEO', icon:'🚀', salary:15000000, desc:'시리즈A 투자 유치 성공! 이번 달 1,500만원.' },
+  { name:'금융 트레이더',icon:'📈', salary:12000000, desc:'증권사 딜링룸, 성과급 포함 1,200만원.' },
+  { name:'연예인',       icon:'🌟', salary:20000000, desc:'CF 계약 성사! 이번 달 2,000만원 수령.' },
+  { name:'건물주',       icon:'🏢', salary:30000000,  desc:'강남 꼬마빌딩 임대 수입 3,000만원!' },
+  { name:'금수저',        icon:'💎', salary:1000000000, desc:'태어날 때부터 부자! 이번 달 수익 10억원.' },
+];
+
+function getRandomJob() {
+  // 금수저: 1/100 확률
+  if(Math.random() < 0.01) return JOBS[JOBS.length - 1];
+  // 취준생·금수저 제외, 가중치: 낮은 급여일수록 자주 등장
+  const pool = JOBS.slice(1, JOBS.length - 1);
+  const weights = pool.map((_, i) => Math.max(1, pool.length - i));
+  const total = weights.reduce((a,b) => a+b, 0);
+  let r = Math.random() * total;
+  for(let i = 0; i < pool.length; i++) {
+    r -= weights[i];
+    if(r <= 0) return pool[i];
+  }
+  return pool[pool.length - 1];
+}
+
+// ==================== GAME STATE ====================
+// 💡 시작자금 5억: 실제 서울 첫 부동산 구매 시 필요한 초기 종잣돈 수준
+const START_MONEY = 100000000;
+let state = {
+  players: [
+    { id:0, name:'나', pos:0, money:START_MONEY, loan:0, jailTurns:0, color:'#e74c3c', icon:'🚀', isAI:false, jailCard:false, laps:0, job: JOBS[0],
+      stats: { totalIncome:0, totalRent:0, totalSalary:0, bestJob:'취준생', turns:0, propsBought:0 } },
+    { id:1, name:'AI', pos:0, money:START_MONEY, loan:0, jailTurns:0, color:'#3498db', icon:'🤖', isAI:true,  jailCard:false, laps:0, job: JOBS[0],
+      stats: { totalIncome:0, totalRent:0, totalSalary:0, bestJob:'취준생', turns:0, propsBought:0 } }
+  ],
+  props: {},
+  currentPlayer: 0,
+  phase: 'turn_announce',
+  doubleCount: 0,
+  log: [],
+  totalTurns: 0,
+  _lastFluctuationLap: 0,
+  _marketChanges: {},  // { cellId: pct } — 마지막 시세 변동 결과
+  _firstPropDone: false, // 게임 첫 부동산 구매 여부
+  _coinInvestment: null, // { playerIdx, coin, amount, multiplier }
+};
+
+// ==================== TURN ANNOUNCE (2초 표시) ====================
+function announceTurn() {
+  state.phase = 'turn_announce';
+  const cp = state.players[state.currentPlayer];
+  document.getElementById('btnRoll').disabled = true;
+  updateUI(); // 잔액 즉시 반영
+
+  // 오버레이 표시
+  const overlay = document.getElementById('turnOverlay');
+  const overlayText = document.getElementById('turnOverlayText');
+  const overlaySub = document.getElementById('turnOverlaySub');
+
+  if(cp.isAI) {
+    overlayText.style.color = '#89b4ff';
+    overlayText.textContent = '🤖 AI 차례!';
+    overlaySub.textContent = 'AI가 생각 중입니다...';
+  } else {
+    overlayText.style.color = '#f5c842';
+    overlayText.textContent = '🚀 내 차례!';
+    overlaySub.textContent = '주사위를 굴릴 준비를 하세요!';
+  }
+  overlay.classList.add('show');
+
+  const ind = document.getElementById('turnIndicator');
+  if(cp.isAI) {
+    ind.textContent = `🤖 AI 차례`;
+    ind.className = 'turn-indicator turn-ai';
+  } else {
+    ind.textContent = `🚀 내 차례`;
+    ind.className = 'turn-indicator turn-player';
+  }
+
+  // 2초 후 오버레이 닫고 roll 단계로
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    state.phase = 'roll';
+
+    // 코인 투자 결과 확인
+    const pending = state._coinInvestment;
+    if(pending && pending.playerIdx === state.currentPlayer) {
+      resolveCoinInvestment(cp, ind);
+      return;
+    }
+
+    updateUI();
+    if(cp.isAI) {
+      ind.textContent = 'AI 진행중...';
+      setTimeout(() => aiTurn(), 400);
+    } else {
+      ind.textContent = '내 차례 — 주사위를 굴리세요!';
+      document.getElementById('btnRoll').disabled = false;
+    }
+  }, 2000);
+}
+
+// ==================== BOARD RENDER ====================
+function buildBoard() {
+  const board = document.getElementById('board');
+  // remove old cells
+  board.querySelectorAll('.cell').forEach(e => e.remove());
+  board.querySelectorAll('.token').forEach(e => e.remove());
+
+  const cw = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-w'));
+  const ch = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-h'));
+  const corner = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--corner'));
+
+  // Build 40 cell position mapping
+  // 0 = bottom-right corner, going counter-clockwise
+  // Actually: 0=bottom-right, 1-9=bottom row right to left, 10=bottom-left, 11-19=left col bottom to top, 20=top-left, 21-29=top row left to right, 30=top-right, 31-39=right col top to bottom
+
+  const positions = [];
+
+  // 0: bottom-right corner
+  positions[0] = { cls:'corner', style:`bottom:0;right:0;width:${corner}px;height:${corner}px;` };
+
+  // 1-6: bottom row, right to left
+  for(let i=1;i<=6;i++) {
+    positions[i] = { cls:'bottom', style:`bottom:0;right:${corner + (i-1)*cw}px;width:${cw}px;height:${corner}px;` };
+  }
+
+  // 7: bottom-left corner
+  positions[7] = { cls:'corner', style:`bottom:0;left:0;width:${corner}px;height:${corner}px;` };
+
+  // 8-13: left col, bottom to top
+  for(let i=8;i<=13;i++) {
+    positions[i] = { cls:'left', style:`left:0;bottom:${corner + (i-8)*ch}px;width:${corner}px;height:${ch}px;` };
+  }
+
+  // 14: top-left corner
+  positions[14] = { cls:'corner', style:`top:0;left:0;width:${corner}px;height:${corner}px;` };
+
+  // 15-20: top row, left to right
+  for(let i=15;i<=20;i++) {
+    positions[i] = { cls:'top', style:`top:0;left:${corner + (i-15)*cw}px;width:${cw}px;height:${corner}px;` };
+  }
+
+  // 21: top-right corner
+  positions[21] = { cls:'corner', style:`top:0;right:0;width:${corner}px;height:${corner}px;` };
+
+  // 22-27: right col, top to bottom
+  for(let i=22;i<=27;i++) {
+    positions[i] = { cls:'right', style:`right:0;top:${corner + (i-22)*ch}px;width:${corner}px;height:${ch}px;` };
+  }
+
+  CELLS.forEach((cell, idx) => {
+    const pos = positions[idx];
+    const el = document.createElement('div');
+    el.className = `cell ${pos.cls}`;
+    el.id = `cell-${idx}`;
+    el.style.cssText += pos.style;
+    el.dataset.id = idx;
+
+    let innerHTML = '';
+
+    if(cell.type === 'prop') {
+      const c = COLORS[cell.color] || '#999';
+      innerHTML += `<div class="color-bar" style="background:${c};order:0"></div>`;
+      innerHTML += `<div class="cell-name" style="order:1">${cell.name}</div>`;
+    } else {
+      innerHTML += `<div class="cell-icon">${cell.icon || ''}</div>`;
+      innerHTML += `<div class="cell-name">${cell.name}</div>`;
+      if(cell.type === 'transport' || cell.type === 'utility') {
+        innerHTML += `<div class="cell-price">${cell.price >= 100000000 ? (cell.price/100000000) + '억' : (cell.price/10000) + '만'}</div>`;
+      }
+    }
+    el.onclick = () => onCellClick(idx);
+    el.style.cursor = 'pointer';
+
+    el.innerHTML = innerHTML;
+    board.appendChild(el);
+  });
+
+  renderTokens();
+}
+
+function getCellCenter(idx) {
+  const el = document.getElementById(`cell-${idx}`);
+  if(!el) return {x:0,y:0};
+  const board = document.getElementById('board');
+  const br = el.getBoundingClientRect();
+  const bbr = board.getBoundingClientRect();
+  return {
+    x: br.left - bbr.left + br.width/2,
+    y: br.top - bbr.top + br.height/2
+  };
+}
+
+function renderTokens() {
+  document.querySelectorAll('.token').forEach(e => e.remove());
+  const board = document.getElementById('board');
+  const size = 22;
+
+  state.players.forEach((p, pi) => {
+    const {x, y} = getCellCenter(p.pos);
+    const token = document.createElement('div');
+    token.className = 'token';
+    token.id = `token-${pi}`;
+    token.style.background = p.color;
+    // 두 말이 같은 칸에 있을 때 살짝 옆으로
+    const offset = pi === 0 ? -(size/2 + 2) : 2;
+    token.style.left = (x + offset) + 'px';
+    token.style.top  = (y - size/2) + 'px';
+    token.style.width  = size + 'px';
+    token.style.height = size + 'px';
+    token.style.fontSize = '0.75rem';
+    token.textContent = p.icon;
+    board.appendChild(token);
+  });
+}
+
+function renderCellOwnership() {
+  CELLS.forEach((cell, idx) => {
+    const el = document.getElementById(`cell-${idx}`);
+    if(!el) return;
+
+    el.querySelectorAll('.cell-prop-badge, .cell-market-badge').forEach(e => e.remove());
+    if(cell.type !== 'prop') return;
+
+    // ── 시세 변동 배지 ──────────────────────────────
+    const pct = state._marketChanges && state._marketChanges[idx];
+    if(pct) {
+      const mb = document.createElement('div');
+      mb.className = 'cell-market-badge';
+      const isUp = pct > 0;
+      mb.textContent = isUp ? `▲${pct}%` : `▼${pct}%`;
+      mb.style.background = isUp ? '#1a6b2f' : '#7b1a1a';
+      mb.style.color       = isUp ? '#82e0aa' : '#f1948a';
+      el.appendChild(mb);
+    }
+
+    // ── 부동산 배지 다중 표시 ───────────────────────
+    const list = state.props[idx];
+    if(!list || list.length === 0) return;
+
+    // 여러 채를 한 줄에 나열하는 컨테이너
+    const wrap = document.createElement('div');
+    wrap.className = 'cell-prop-badge';
+    wrap.style.display = 'flex';
+    wrap.style.flexWrap = 'wrap';
+    wrap.style.gap = '1px';
+    wrap.style.justifyContent = 'center';
+    wrap.style.padding = '1px';
+    wrap.style.background = 'transparent';
+
+    list.forEach(entry => {
+      const owner = state.players[entry.owner];
+      const label = ['', '빌라', '아파트', '빌딩'][entry.buildings] || '';
+      if(!label) return;
+      const span = document.createElement('span');
+      span.textContent = label;
+      span.style.background = owner.color;
+      span.style.color = '#fff';
+      span.style.borderRadius = '2px';
+      span.style.padding = '0 2px';
+      span.style.fontSize = '0.6rem';
+      span.style.fontWeight = '900';
+      span.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)';
+      span.style.lineHeight = '1.3';
+      wrap.appendChild(span);
+    });
+
+    el.appendChild(wrap);
+  });
+}
+
+// ==================== LOG ====================
+function addLog(msg, type='') {
+  state.log.unshift({ msg, type });
+  if(state.log.length > 50) state.log.pop();
+  const box = document.getElementById('logBox');
+  box.innerHTML = state.log.slice(0,20).map(l =>
+    `<div class="log-entry ${l.type}">${l.msg}</div>`
+  ).join('');
+}
+
+// ==================== UI UPDATE ====================
+function updateUI() {
+  state.players.forEach((p, i) => {
+    const prefix = i===0 ? 'my' : 'ai';
+    document.getElementById(prefix+'Money').textContent = '💰 ' + fmt(p.money);
+    let status = `📍 ${CELLS[p.pos].name}`;
+    if(p.jailTurns > 0) status += ` · 국세청 ${p.jailTurns}턴`;
+    const laps = p.laps || 0;
+    status += ` · ${laps}바퀴 완주`;
+    if(p.jailCard) status += ' 🃏';
+    document.getElementById(prefix+'Status').textContent = status;
+
+    const jobEl = document.getElementById(prefix+'Job');
+    if(jobEl && p.job) {
+      jobEl.textContent = `${p.job.icon} ${p.job.name} · ${p.job.salary > 0 ? fmt(p.job.salary) : '월급 없음'}`;
+    }
+  });
+  updateLoanUI();
+
+  // 매도 버튼 — 내 차례 roll 단계이고 소유 부동산 있을 때
+  const btnSell = document.getElementById('btnSellProp');
+  if(btnSell) {
+    const canSell = state.currentPlayer === 0 &&
+      state.phase === 'roll' &&
+      allOwnedBy(0).length > 0;
+    btnSell.style.display = canSell ? 'block' : 'none';
+  }
+
+  // 턴 진행 바
+  const turnWrap = document.getElementById('turnProgressWrap');
+  const turnBar  = document.getElementById('turnProgressBar');
+  const turnLabel= document.getElementById('turnProgressLabel');
+  const turnCtr  = document.getElementById('turnCounter');
+  if(turnWrap && state.totalTurns > 0) {
+    turnWrap.style.display = 'block';
+    const _curLaps = Math.max(state.players[0].laps||0, state.players[1].laps||0);
+    const pct = Math.min(100, (_curLaps / MAX_LAPS) * 100);
+    turnBar.style.width = pct + '%';
+    turnLabel.textContent = `${_curLaps} / ${MAX_LAPS}바퀴`;
+    turnCtr.textContent = `${Math.max(state.players[0].laps||0,state.players[1].laps||0)}바퀴`;
+    // 순자산 100억 근접 알림
+    const myNW = getNetWorth(0);
+    const aiNW = getNetWorth(1);
+    const maxNW = Math.max(myNW, aiNW);
+    if(maxNW >= WIN_NET_WORTH * 0.8) {
+      turnCtr.innerHTML += ` <span style="color:#f1c40f">🏆${Math.round(maxNW/100000000)}억</span>`;
+    }
+  }
+
+  // 자산 비율 바 업데이트
+  const myMoney = Math.max(0, state.players[0].money);
+  const aiMoney = Math.max(0, state.players[1].money);
+  const totalMoney = myMoney + aiMoney || 1;
+  const myPct = (myMoney / totalMoney * 100).toFixed(1);
+  const aiPct = (100 - myPct).toFixed(1);
+  const myBar = document.getElementById('myWealthBar');
+  const aiBar = document.getElementById('aiWealthBar');
+  if(myBar) myBar.style.width = myPct + '%';
+  if(aiBar) aiBar.style.width = aiPct + '%';
+
+  const cp = state.players[state.currentPlayer];
+  const ind = document.getElementById('turnIndicator');
+  if(state.phase === 'turn_announce') {
+    // 이미 announceTurn에서 처리
+  } else if(cp.isAI) {
+    ind.textContent = 'AI 진행중...';
+    ind.className = 'turn-indicator turn-ai';
+  } else {
+    ind.textContent = '내 차례';
+    ind.className = 'turn-indicator turn-player';
+  }
+
+  const btnRoll = document.getElementById('btnRoll');
+  btnRoll.disabled = state.phase !== 'roll' || cp.isAI;
+  btnRoll.textContent = '🎲 주사위 굴리기';
+
+  renderCellOwnership();
+  renderBuildPanel();
+  renderTerritoryPanel();
+}
+
+function renderBuildPanel() {
+  const content = document.getElementById('buildContent');
+  const owned = allOwnedBy(0).filter(({cellId})=>CELLS[cellId].type==='prop');
+
+  if(owned.length === 0) {
+    content.innerHTML = '<span style="color:#aaa;font-size:0.8rem">아직 소유한 땅이 없습니다.</span>';
+    return;
+  }
+
+  const canTrade = state.phase === 'on_my_prop';
+
+  content.innerHTML = '<div class="properties-list">' +
+    owned.map(({cellId, entry}) => {
+      const cell = CELLS[cellId];
+      const bld  = getBld(cellId);
+      const col  = COLORS[cell.color] || '#999';
+      const lvl  = entry.buildings;
+      const nextLvl = lvl < 3 ? lvl+1 : null;
+      const cost = nextLvl ? (bld.buy[nextLvl] - bld.buy[lvl]) : 0;
+      const isLanded = canTrade && cellId === state._landedCellId;
+      return `<span class="prop-tag"
+        style="background:${isLanded?col+'55':col+'22'};border-color:${isLanded?col:col+'66'};
+        color:#fff;cursor:${isLanded?'pointer':'default'};
+        ${isLanded?'box-shadow:0 0 6px '+col+';font-weight:700;':''}"
+        onclick="${isLanded?'openTradeModal()':'void(0)'}">
+        ${isLanded?'🏠 ':''}${cell.name} [${BLD_NAMES[lvl]}]
+      </span>`;
+    }).join('') + '</div>';
+}
+
+// ==================== MODAL ====================
+function showModal(title, content, buttons) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalContent').innerHTML = content;
+  const btns = document.getElementById('modalBtns');
+  btns.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = b.cls || 'btn-ok';
+    btn.textContent = b.text;
+    btn.onclick = () => {
+      document.getElementById('modalOverlay').classList.remove('show');
+      if(b.cb) b.cb();
+    };
+    btns.appendChild(btn);
+  });
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal(cb) {
+  document.getElementById('modalOverlay').classList.remove('show');
+  if(cb) cb();
+}
+
+// ==================== DICE ====================
+function rollDice() {
+  if(state.phase !== 'roll') return;
+  const cp = state.players[state.currentPlayer];
+  if(cp.isAI) return;
+
+  doRoll();
+}
+
+function doRoll() {
+  const d1 = Math.floor(Math.random()*6)+1;
+  const d2 = Math.floor(Math.random()*6)+1;
+  const isDouble = d1 === d2;
+  const total = d1 + d2;
+
+  const die1 = document.getElementById('die1');
+  const die2 = document.getElementById('die2');
+  die1.classList.add('rolling');
+  die2.classList.add('rolling');
+  setTimeout(() => {
+    die1.classList.remove('rolling');
+    die2.classList.remove('rolling');
+    renderDie('die1', d1);
+    renderDie('die2', d2);
+  }, 500);
+
+  const cp = state.players[state.currentPlayer];
+  addLog(`${cp.name}: 🎲 ${d1}+${d2}=${total}${isDouble?' (더블!)':''}`);
+
+  setTimeout(() => {
+    if(cp.jailTurns > 0) {
+      handleJailRoll(cp, d1, d2, total, isDouble);
+    } else {
+      if(isDouble) {
+        state.doubleCount++;
+        if(state.doubleCount >= 3) {
+          addLog(`${cp.name}: 더블 3회! 세무조사! 🏛️`, 'bad');
+          sendToJail(state.currentPlayer);
+          endTurn(false);
+          return;
+        }
+      } else {
+        state.doubleCount = 0;
+      }
+      movePlayer(state.currentPlayer, total, isDouble);
+    }
+  }, 600);
+}
+
+function handleJailRoll(cp, d1, d2, total, isDouble) {
+  if(isDouble) {
+    addLog(`${cp.name}: 더블로 국세청 탈출! 🎉`, 'important');
+    cp.jailTurns = 0;
+    state.doubleCount = 0;
+    movePlayer(state.currentPlayer, total, false);
+  } else {
+    cp.jailTurns--;
+    if(cp.jailTurns <= 0) {
+      addLog(`${cp.name}: 국세청 조사 종료!`);
+      cp.jailTurns = 0;
+      movePlayer(state.currentPlayer, total, false);
+    } else {
+      addLog(`${cp.name}: 국세청 조사 중 ${cp.jailTurns}턴 더 대기.`);
+      endTurn(false);
+    }
+  }
+}
+
+// ==================== MOVEMENT (한 칸씩) ====================
+function handleLapCompletion(playerIdx) {
+  const cp = state.players[playerIdx];
+  cp.laps = (cp.laps || 0) + 1;
+
+  checkMarketFluctuation(playerIdx);
+  payLoanInterest(playerIdx);
+
+  const oldJob = cp.job;
+  const isJobChangeLap = cp.laps % 2 === 1;
+  let newJob;
+  if(isJobChangeLap) {
+    newJob = getRandomJob();
+    cp.job = newJob;
+  } else {
+    newJob = cp.job;
+  }
+  cp.money += newJob.salary;
+  if(newJob.salary > 0) trackSalary(playerIdx, newJob.salary, newJob.name);
+
+  if(!cp.isAI) {
+    cp._pendingJobEvent = { newJob, oldJob, salary: newJob.salary };
+  } else {
+    if(isJobChangeLap) {
+      addLog(`AI: 새 직업 → ${newJob.icon} ${newJob.name} (월급 +${fmt(newJob.salary)})`, 'important');
+    } else {
+      addLog(`AI: 급여 +${fmt(newJob.salary)} (${newJob.icon} ${newJob.name})`, 'important');
+    }
+  }
+}
+
+function movePlayer(playerIdx, steps, isDouble) {
+  const cp = state.players[playerIdx];
+  state.phase = 'moving';
+  document.getElementById('btnRoll').disabled = true;
+
+  let remaining = steps;
+
+  function stepOne() {
+    if(remaining <= 0) {
+      document.getElementById('moveCounter').textContent = '';
+      setTimeout(() => landOn(playerIdx, isDouble), 300);
+      return;
+    }
+
+    const oldPos = cp.pos;
+    cp.pos = (cp.pos + 1) % 40;
+    remaining--;
+
+    // 출발점 통과 체크
+    if(cp.pos === 0 && oldPos !== 0) {
+      handleLapCompletion(playerIdx);
+    }
+
+    document.getElementById('moveCounter').textContent = `이동중... 남은 칸: ${remaining}`;
+    renderTokens();
+    updateUI();
+
+    setTimeout(stepOne, 220);
+  }
+
+  stepOne();
+}
+
+function landOn(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const cell = CELLS[cp.pos];
+  addLog(`${cp.name}: ${cell.name} 도착`);
+
+  state.phase = 'action';
+  updateUI();
+
+  processLandOnEvents(playerIdx, isDouble);
+}
+
+// 착지 후 팝업 이벤트 체인: 첫구매 → 시세변동 → 직업/월급 → 셀핸들러
+function processLandOnEvents(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  if(cp.isAI) { resumeLandOn(playerIdx, isDouble); return; }
+
+  // 1. 첫 부동산 구매 알림
+  if(state._pendingFirstPropEvent) {
+    const { playerIdx: buyer, cellId, cost } = state._pendingFirstPropEvent;
+    delete state._pendingFirstPropEvent;
+    const buyer_cp  = state.players[buyer];
+    const cell      = CELLS[cellId];
+    const col       = COLORS[cell.color] || '#888';
+    const html = `
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:2rem;margin-bottom:4px">🏆</div>
+        <div style="font-size:1rem;font-weight:800;color:#f5c842;margin-bottom:10px">게임 첫 부동산 거래!</div>
+        <div style="background:rgba(255,255,255,0.07);border-radius:10px;padding:12px;font-size:0.85rem;text-align:left;line-height:2">
+          <div><span style="color:#aaa">👤 구매자</span>&nbsp; <b>${buyer_cp.icon} ${buyer_cp.name}</b></div>
+          <div><span style="color:#aaa">🏘️ 부동산</span>&nbsp; <b>${cell.name}</b>
+            <span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${col};margin-left:4px;vertical-align:middle"></span>
+          </div>
+          <div><span style="color:#aaa">💼 직업</span>&nbsp; <b>${buyer_cp.job.icon} ${buyer_cp.job.name}</b></div>
+          <div><span style="color:#aaa">🔄 바퀴</span>&nbsp; <b>${buyer_cp.laps}바퀴 완주</b></div>
+          <div><span style="color:#aaa">💰 구매가</span>&nbsp; <b style="color:#82e0aa">${fmt(cost)}</b></div>
+        </div>
+        <p style="margin-top:10px;font-size:0.78rem;color:#aaa">첫 구매를 시작으로 서울을 정복하세요! 🗺️</p>
+      </div>`;
+    showModal('🏆 첫 부동산 거래!', html, [{
+      text: '확인 ✅', cls: 'btn-ok',
+      cb: () => { closeModal(); processLandOnEvents(playerIdx, isDouble); }
+    }]);
+    return;
+  }
+
+  // 2. 시세 변동 알림
+  if(state._pendingMarketEvent) {
+    const { content } = state._pendingMarketEvent;
+    delete state._pendingMarketEvent;
+    showModal('📊 부동산 시세 변동!', content, [{
+      text: '확인 ✅', cls: 'btn-ok',
+      cb: () => { closeModal(); processLandOnEvents(playerIdx, isDouble); }
+    }]);
+    return;
+  }
+
+  // 3. 직업/월급 → 셀 핸들러
+  resumeLandOn(playerIdx, isDouble);
+}
+
+function resumeLandOn(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const cell = CELLS[cp.pos];
+
+  // 직업 변경 이벤트 처리 (플레이어만)
+  if(cp._pendingJobEvent) {
+    const { newJob, oldJob, salary } = cp._pendingJobEvent;
+    delete cp._pendingJobEvent;
+
+    const isNewJob = oldJob.name !== newJob.name;
+    const jobHtml = `
+      <div style="text-align:center;padding:8px 0">
+        <div style="font-size:2.5rem;margin-bottom:6px">${newJob.icon}</div>
+        <div style="font-size:1.2rem;font-weight:800;color:#2c1700;margin-bottom:4px">${newJob.name}</div>
+        <div style="font-size:0.85rem;color:#666;margin-bottom:14px">${newJob.desc}</div>
+        <div style="background:#f5f0e0;border-radius:10px;padding:10px;font-size:0.9rem;color:#2c1700">
+          ${isNewJob ? `<div style="color:#888;font-size:0.78rem;margin-bottom:6px">${oldJob.icon} ${oldJob.name} → ${newJob.icon} ${newJob.name}</div>` : ''}
+          <div style="font-size:1.1rem;font-weight:800;color:#c0392b">
+            💼 월급 +${fmt(salary)}
+          </div>
+        </div>
+      </div>`;
+
+    const title = isNewJob ? `🎉 직업 변경!` : `💼 월급 수령`;
+    showModal(title, jobHtml, [{
+      text: '받기 💰', cls: 'btn-ok',
+      cb: () => { dispatchCell(playerIdx, isDouble, cell.type); }
+    }]);
+    return;
+  }
+
+  dispatchCell(playerIdx, isDouble, cell.type);
+}
+
+function dispatchCell(playerIdx, isDouble, type) {
+  switch(type) {
+    case 'go': endTurn(isDouble); break;
+    case 'prop': handleProp(playerIdx, isDouble); break;
+    case 'transport': handleTransport(playerIdx, isDouble); break;
+    case 'utility': handleUtility(playerIdx, isDouble); break;
+    case 'tax': handleTax(playerIdx, isDouble); break;
+    case 'chance': drawChance(playerIdx, isDouble); break;
+    case 'community': drawCommunity(playerIdx, isDouble); break;
+    case 'incentive': handleIncentive(playerIdx, isDouble); break;
+    case 'lotto': handleLotto(playerIdx, isDouble); break;
+    case 'cheongak': handleCheongak(playerIdx, isDouble); break;
+    case 'jail': endTurn(isDouble); break;
+    case 'gotojail': sendToJail(playerIdx); endTurn(false); break;
+    case 'coinexchange': handleCoinExchange(playerIdx, isDouble); break;
+    default: endTurn(isDouble);
+  }
+}
+
+// ==================== PROPERTY ====================
+function handleProp(playerIdx, isDouble) {
+  const cp   = state.players[playerIdx];
+  const cell = CELLS[cp.pos];
+  const list = propEntries(cp.pos);
+
+  const others = otherEntries(cp.pos, playerIdx);
+
+  // ── 통행료 정산 ──────────────────────────────────────────
+  if(others.length > 0) {
+    let totalRent = 0;
+    const rentLog = [];
+    others.forEach(e => {
+      const rent = cell.rent ? cell.rent[e.buildings] : 0;
+      const owner = state.players[e.owner];
+      const actual = Math.min(rent, Math.max(0, cp.money - totalRent));
+      totalRent += actual;
+      owner.money += actual;
+      rentLog.push(`${owner.name}[${BLD_NAMES[e.buildings]}] ${fmt(actual)}`);
+    });
+    cp.money -= totalRent;
+    trackRentPaid(playerIdx, totalRent);
+    addLog(`${cp.name}: 통행료 합계 ${fmt(totalRent)} [${rentLog.join(' / ')}]`, 'bad');
+    if(cp.money < 0) { checkBankruptcy(playerIdx, isDouble); return; }
+  }
+
+  // ── 구매 모달 직접 표시 ──────────────────────────────────
+  if(!cp.isAI) {
+    state._landedCellId = cp.pos;
+    showBuyBuildingModal(playerIdx, cp.pos, isDouble);
+  } else {
+    const bld = getBld(cp.pos);
+    let bestLvl = 0;
+    for(let i = 3; i >= 1; i--) {
+      if(cp.money >= bld.buy[i] * 1.2) { bestLvl = i; break; }
+    }
+    if(bestLvl > 0) {
+      const cost = bld.buy[bestLvl];
+      cp.money -= cost;
+      if(!state.props[cp.pos]) state.props[cp.pos] = [];
+      state.props[cp.pos].push({ owner: playerIdx, buildings: bestLvl });
+      trackPropBought(playerIdx, cp.pos, cost);
+      addLog(`${cp.name}: ${cell.name} ${BLD_NAMES[bestLvl]} 매수! (${fmt(cost)})`, 'important');
+    } else {
+      addLog(`${cp.name}: ${cell.name} — 자금 부족, 구매 포기`);
+    }
+    endTurn(isDouble);
+  }
+}
+
+function showBuyBuildingModal(playerIdx, cellId, isDouble) {
+  const cp = state.players[playerIdx];
+  const cell = CELLS[cellId];
+  const bld = getBld(cellId);
+  const c = COLORS[cell.color] || '#999';
+  const minCost = bld.buy[1];
+
+  // 빌라도 못 살 경우 안내 모달만 표시
+  if(cp.money < minCost) {
+    showModal('💸 잔액 부족',
+      `<div style="text-align:left">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${c}"></span>
+          <b>${cell.name}</b>
+        </div>
+        <p style="margin-bottom:10px;color:#aaa;font-size:0.88rem">
+          현재 잔액으로는 이 구역에 매수할 수 없습니다.
+        </p>
+        <div style="padding:10px;background:rgba(231,76,60,0.1);border:1px solid rgba(231,76,60,0.3);border-radius:8px;font-size:0.85rem">
+          <div>💰 보유액: <b style="color:#f5c842">${fmt(cp.money)}</b></div>
+          <div style="margin-top:4px">🏚️ 빌라 최소 매매가: <b style="color:#f1948a">${fmt(minCost)}</b></div>
+          <div style="margin-top:4px;color:#e67e22">📉 부족액: <b>${fmt(minCost - cp.money)}</b></div>
+        </div>
+        <p style="margin-top:10px;font-size:0.8rem;color:#aaa">💡 대출을 활용하거나 다음 기회를 노려보세요!</p>
+      </div>`,
+      [{ text: '확인', cls: 'btn-ok', cb: () => { closeModal(); endTurn(isDouble); } }]
+    );
+    return;
+  }
+
+  const rows = [1, 2, 3].map(i => {
+    const cost = bld.buy[i];
+    const affordable = cp.money >= cost;
+    const rent0 = cell.rent ? cell.rent[i] : 0;
+    return `
+      <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:6px;
+        cursor:${affordable ? 'pointer' : 'not-allowed'};
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.12);
+        opacity:${affordable ? 1 : 0.35}">
+        <input type="radio" name="buy_bld" value="${i}" ${affordable ? '' : 'disabled'} style="accent-color:#f5c842">
+        <span style="flex:1;font-size:0.85rem">
+          <b>${BLD_NAMES[i]}</b>
+          <span style="color:#aaa;font-size:0.75rem;margin-left:6px">통행료 ${fmt(rent0)}</span>
+        </span>
+        <b style="color:${affordable ? '#82e0aa' : '#f1948a'};font-size:0.85rem">${fmt(cost)}</b>
+      </label>`;
+  }).join('');
+
+  showModal(`🏠 ${cell.name} 매매`,
+    `<div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${c}"></span>
+        <span style="font-size:0.9rem;color:#aaa">💰 보유액 <b style="color:#f5c842">${fmt(cp.money)}</b></span>
+      </div>
+      <p style="margin-bottom:10px;font-size:0.85rem">부동산 유형을 선택하세요:</p>
+      ${rows}
+    </div>`,
+    [
+      { text: '매수 ✅', cls: 'btn-yes', cb: () => {
+        const sel = document.querySelector('input[name="buy_bld"]:checked');
+        if(!sel) { alert('유형을 선택하세요!'); return; }
+        const lvl = +sel.value;
+        const cost = bld.buy[lvl];
+        if(cp.money < cost) { alert('자금이 부족합니다!'); return; }
+        cp.money -= cost;
+        if(!state.props[cellId]) state.props[cellId] = [];
+        state.props[cellId].push({ owner: playerIdx, buildings: lvl });
+        trackPropBought(playerIdx, cellId, cost);
+        addLog(`나: ${cell.name} ${BLD_NAMES[lvl]} 매수! (${fmt(cost)})`, 'important');
+        closeModal();
+        updateUI();
+        endTurn(isDouble);
+      }},
+      { text: '패스 ❌', cls: 'btn-no', cb: () => { closeModal(); endTurn(isDouble); } }
+    ]
+  );
+}
+
+function buyProp(playerIdx, cellId) {
+  // 청약/AI용 - 빌라(레벨1) 기본 구매
+  const cell = CELLS[cellId];
+  const cp = state.players[playerIdx];
+  const bld = getBld(cellId);
+  const cost = bld.buy[1];
+  cp.money -= cost;
+  if(!state.props[cellId]) state.props[cellId] = [];
+  state.props[cellId].push({ owner: playerIdx, buildings: 1 });
+  trackPropBought(playerIdx, cellId, cost);
+  const bldTag = cell.type === 'prop' ? ' 빌라' : '';
+  addLog(`${cp.name}: ${cell.name}${bldTag} 매수! (${fmt(cost)})`, 'important');
+}
+
+function handleTransport(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const cell = CELLS[cp.pos];
+  const prop = firstEntry(cp.pos);
+
+  if(!prop) {
+    if(cp.isAI) {
+      if(cp.money >= cell.price * 1.2) { buyProp(playerIdx, cp.pos); }
+      endTurn(isDouble);
+    } else {
+      if(cp.money < cell.price) {
+        showModal('💸 구매 불가',
+          `<p><b>${cell.name}</b>에 도착했지만<br>잔액이 부족해 구매할 수 없습니다.</p>
+           <p style="margin-top:8px">
+             🏷️ 매매가: <b>${fmt(cell.price)}</b><br>
+             💰 현재 잔액: <b style="color:#c0392b">${fmt(cp.money)}</b><br>
+             📉 부족액: <b style="color:#c0392b">${fmt(cell.price - cp.money)}</b>
+           </p>`,
+          [{ text:'확인', cls:'btn-ok', cb: () => endTurn(isDouble) }]
+        );
+        return;
+      }
+      showModal(`🚌 ${cell.name}`,
+        `<p><b>${cell.name}</b>을 구매하시겠습니까?</p><p>가격: <b>${fmt(cell.price)}</b></p><p>소유 교통편 수에 따라 임대료 증가!</p>`,
+        [
+          { text:'구매 ✅', cls:'btn-yes', cb: () => { buyProp(playerIdx, cp.pos); endTurn(isDouble); updateUI(); }},
+          { text:'패스 ❌', cls:'btn-no', cb: () => endTurn(isDouble) }
+        ]
+      );
+    }
+  } else if(prop.owner === playerIdx) {
+    endTurn(isDouble);
+  } else {
+    const owner = state.players[prop.owner];
+    const ownedCount = allOwnedBy(prop.owner).filter(({cellId})=>CELLS[cellId].type==='transport').length;
+    const rent = [50000000,100000000,200000000,400000000][Math.min(ownedCount-1,3)];
+    cp.money -= rent; owner.money += rent;
+    addLog(`${cp.name}: 교통 통행료 ${fmt(rent)} 지불`,'bad');
+    updateUI();
+    checkBankruptcy(playerIdx, isDouble);
+  }
+}
+
+function handleUtility(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const cell = CELLS[cp.pos];
+  const prop = firstEntry(cp.pos);
+
+  if(!prop) {
+    if(cp.isAI) {
+      if(cp.money >= cell.price) { buyProp(playerIdx, cp.pos); }
+      endTurn(isDouble);
+    } else {
+      if(cp.money < cell.price) {
+        showModal('💸 구매 불가',
+          `<p><b>${cell.name}</b>에 도착했지만<br>잔액이 부족해 구매할 수 없습니다.</p>
+           <p style="margin-top:8px">
+             🏷️ 매매가: <b>${fmt(cell.price)}</b><br>
+             💰 현재 잔액: <b style="color:#c0392b">${fmt(cp.money)}</b><br>
+             📉 부족액: <b style="color:#c0392b">${fmt(cell.price - cp.money)}</b>
+           </p>`,
+          [{ text:'확인', cls:'btn-ok', cb: () => endTurn(isDouble) }]
+        );
+        return;
+      }
+      showModal(`⚡ ${cell.name}`,
+        `<p><b>${cell.name}</b>을 구매하시겠습니까?</p><p>가격: <b>${fmt(cell.price)}</b></p>`,
+        [
+          { text:'구매 ✅', cls:'btn-yes', cb: () => { buyProp(playerIdx, cp.pos); endTurn(isDouble); updateUI(); }},
+          { text:'패스 ❌', cls:'btn-no', cb: () => endTurn(isDouble) }
+        ]
+      );
+    }
+  } else if(prop.owner === playerIdx) {
+    endTurn(isDouble);
+  } else {
+    const owner = state.players[prop.owner];
+    const die = Math.floor(Math.random()*6)+1 + Math.floor(Math.random()*6)+1;
+    const both = allOwnedBy(prop.owner).filter(({cellId})=>[9,23].includes(cellId)).length >= 2;
+    // 전기·수도 요금: 주사위 합 × (단독 1,500만 / 독점 4,000만)
+    const rent = die * (both ? 40000000 : 15000000);
+
+    cp.money -= rent;
+    owner.money += rent;
+    addLog(`${cp.name}: 유틸리티 통행료 ${fmt(rent)} 지불`, 'bad');
+    updateUI();
+    checkBankruptcy(playerIdx, isDouble);
+  }
+}
+
+function handleTax(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const cell = CELLS[cp.pos];
+  cp.money -= cell.amount;
+  addLog(`${cp.name}: 세금 ${fmt(cell.amount)} 납부 💸`, 'bad');
+  checkBankruptcy(playerIdx, isDouble);
+}
+
+// ==================== CARDS ====================
+function drawChance(playerIdx, isDouble) {
+  const card = CHANCE_CARDS[Math.floor(Math.random()*CHANCE_CARDS.length)];
+  const cp = state.players[playerIdx];
+
+  const cardHtml = `<div class="card-display chance"><div class="card-type">❓ 찬스 카드</div><div class="card-text">${card.text}</div></div>`;
+
+  if(cp.isAI) {
+    applyCard(card, playerIdx);
+    addLog(`AI 찬스: ${card.text}`, 'important');
+    endTurn(isDouble);
+  } else {
+    showModal('❓ 찬스!', cardHtml + `<p>${card.text}</p>`,
+      [{ text:'확인', cls:'btn-ok', cb: () => { applyCard(card, playerIdx); endTurn(isDouble); updateUI(); }}]
+    );
+  }
+}
+
+// ==================== 인센티브 구역 ====================
+// 직업별 인센티브 배율: 월급의 N배
+const INCENTIVE_RATE = {
+  '취준생':        0,     // 인센티브 없음
+  '편의점 알바':   0.5,
+  '배달 라이더':   0.5,
+  '프리랜서':      1.0,
+  '일반 회사원':   1.0,
+  '공무원':        0.5,   // 공무원은 성과급 적음
+  '선생님':        0.5,
+  '간호사':        1.0,
+  '자영업자':      2.0,   // 대목 수익
+  'IT 개발자':     2.0,
+  '약사':          1.5,
+  '변호사':        3.0,
+  '의사':          3.0,
+  '부동산 중개사': 3.0,
+  '유튜버':        2.0,
+  '스타트업 CEO':  5.0,
+  '금융 트레이더': 4.0,
+  '연예인':        5.0,
+  '건물주':        3.0,
+  '금수저':       10.0,
+};
+
+function handleIncentive(playerIdx, isDouble) {
+  const cp  = state.players[playerIdx];
+  const job = cp.job;
+  const rate = INCENTIVE_RATE[job.name] ?? 1.0;
+  const bonus = Math.round(job.salary * rate);
+
+  if(bonus <= 0) {
+    const msg = `${job.icon} ${job.name}은 인센티브 대상이 아닙니다.`;
+    if(cp.isAI) {
+      addLog(`AI: 💰 인센티브 구역 — ${msg}`, 'normal');
+      endTurn(isDouble);
+    } else {
+      showModal('💰 인센티브 구역',
+        `<div style="text-align:center;padding:8px 0">
+          <div style="font-size:2rem;margin-bottom:8px">${job.icon}</div>
+          <p><b>${job.name}</b></p>
+          <p style="color:#aaa;font-size:0.85rem;margin-top:6px">${msg}</p>
+        </div>`,
+        [{ text:'확인', cls:'btn-ok', cb: () => { closeModal(); endTurn(isDouble); } }]
+      );
+    }
+    return;
+  }
+
+  cp.money += bonus;
+  trackSalary(playerIdx, bonus, job.name + ' 인센티브');
+
+  const rateLabel = rate >= 1 ? `월급의 ${rate}배` : `월급의 ${rate * 100}%`;
+  if(cp.isAI) {
+    addLog(`AI: 💰 인센티브! ${job.icon} ${job.name} → +${fmt(bonus)} (${rateLabel})`, 'important');
+    endTurn(isDouble);
+  } else {
+    showModal('💰 인센티브 지급!',
+      `<div style="text-align:center;padding:8px 0">
+        <div style="font-size:2.5rem;margin-bottom:8px">${job.icon}</div>
+        <div style="font-size:1rem;font-weight:bold;margin-bottom:4px">${job.name}</div>
+        <div style="font-size:0.8rem;color:#aaa;margin-bottom:14px">${rateLabel} 인센티브 지급</div>
+        <div style="font-size:1.6rem;font-weight:900;color:#f1c40f">+${fmt(bonus)}</div>
+        <div style="margin-top:10px;font-size:0.8rem;color:#aaa">
+          💰 현재 잔액: <b style="color:#f5c842">${fmt(cp.money)}</b>
+        </div>
+      </div>`,
+      [{ text:'받기 💰', cls:'btn-yes', cb: () => { closeModal(); endTurn(isDouble); updateUI(); } }]
+    );
+  }
+}
+
+function drawCommunity(playerIdx, isDouble) {
+  const card = COMMUNITY_CARDS[Math.floor(Math.random()*COMMUNITY_CARDS.length)];
+  const cp = state.players[playerIdx];
+
+  const cardHtml = `<div class="card-display public"><div class="card-type">🤝 공공기금 카드</div><div class="card-text">${card.text}</div></div>`;
+
+  if(cp.isAI) {
+    applyCard(card, playerIdx);
+    addLog(`AI 공공기금: ${card.text}`, 'important');
+    endTurn(isDouble);
+  } else {
+    showModal('🤝 공공기금!', cardHtml,
+      [{ text:'확인', cls:'btn-ok', cb: () => { applyCard(card, playerIdx); endTurn(isDouble); updateUI(); }}]
+    );
+  }
+}
+
+// ==================== 로또 ====================
+function handleLotto(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const prize = 1000000000; // 당첨금 10억
+  const isWin = Math.random() < 0.01; // 1/100 확률
+
+  if(cp.isAI) {
+    if(isWin) {
+      cp.money += prize;
+      addLog(`AI: 🎰 로또 당첨!! 10억원 수령!`, 'important');
+    } else {
+      addLog(`AI: 🎰 로또 꽝.`, 'normal');
+    }
+    endTurn(isDouble);
+    return;
+  }
+
+  if(isWin) {
+    cp.money += prize;
+    updateUI();
+    showModal('🎰 로또 당첨!!',
+      `<div style="text-align:center;font-size:2em">🎉🎉🎉</div>
+       <p style="text-align:center"><b style="color:#f39c12;font-size:1.4em">1등 당첨!</b></p>
+       <p style="text-align:center">당첨금 <b>${fmt(prize)}</b> 수령!</p>`,
+      [{ text:'수령하기', cls:'btn-ok', cb: () => { endTurn(isDouble); updateUI(); } }]
+    );
+  } else {
+    showModal('🎰 로또',
+      `<p style="text-align:center;font-size:1.2em">😢 꽝!</p>
+       <p style="text-align:center">😢 다음엔 될 거예요.</p>`,
+      [{ text:'확인', cls:'btn-ok', cb: () => endTurn(isDouble) }]
+    );
+  }
+}
+
+// ==================== 청약 ====================
+function handleCheongak(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+
+  if(cp.isAI) {
+    // AI: 살 수 있는 매물 중 가장 싼 것 아파트 반값 구매
+    const targets = CELLS.filter(c =>
+      c.type === 'prop' && myEntries(c.id, playerIdx).length === 0 && cp.money >= Math.floor(getBld(c.id).buy[2] / 2)
+    );
+    if(targets.length > 0) {
+      const target = targets[0];
+      const halfPrice = Math.floor(getBld(target.id).buy[2] / 2);
+      cp.money -= halfPrice;
+      if(!state.props[target.id]) state.props[target.id] = [];
+      state.props[target.id].push({ owner: playerIdx, buildings: 2 });
+      trackPropBought(playerIdx, target.id, halfPrice);
+      addLog(`AI: 🏠 청약! ${target.name} 아파트 반값 구매 (${fmt(halfPrice)})`, 'important');
+    } else {
+      addLog(`AI: 🏠 청약 — 구매 가능한 매물 없음.`, 'normal');
+    }
+    endTurn(isDouble);
+    return;
+  }
+
+  // 플레이어: 미소유 매물 목록 표시
+  const available = CELLS.filter(c =>
+    c.type === 'prop' && myEntries(c.id, playerIdx).length === 0
+  );
+
+  if(available.length === 0) {
+    showModal('🏠 청약',
+      `<p>현재 구매 가능한 매물이 없습니다.</p>`,
+      [{ text:'확인', cls:'btn-ok', cb: () => endTurn(isDouble) }]
+    );
+    return;
+  }
+
+  const listHtml = available.map(c => {
+    const bld = getBld(c.id);
+    const villaFull = bld.buy[2];
+    const half = Math.floor(villaFull / 2);
+    const canAfford = cp.money >= half;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee;opacity:${canAfford?1:0.4}">
+      <span>${c.name}</span>
+      <span style="color:#888;text-decoration:line-through;font-size:0.85em">${fmt(villaFull)}</span>
+      <b style="color:#27ae60">${fmt(half)} 🏢아파트</b>
+      <button onclick="doCheongak(${c.id},${isDouble?1:0})" ${canAfford?'':'disabled'}
+        style="padding:4px 10px;background:#27ae60;color:#fff;border:none;border-radius:6px;cursor:pointer;${canAfford?'':'cursor:not-allowed'}">청약</button>
+    </div>`;
+  }).join('');
+
+  showModal('🏠 청약 당첨!',
+    `<p>원하는 매물을 <b style="color:#27ae60">반값</b>에 구매하세요!</p>
+     <div style="max-height:260px;overflow-y:auto">${listHtml}</div>`,
+    [{ text:'취소', cls:'btn-cancel', cb: () => endTurn(isDouble) }]
+  );
+}
+
+window.doCheongak = function(cellId, isDoubleInt) {
+  const isDouble = !!isDoubleInt;
+  const playerIdx = state.currentPlayer;
+  const cp = state.players[playerIdx];
+  const cell = CELLS[cellId];
+  const bld = getBld(cellId);
+  const halfPrice = Math.floor(bld.buy[2] / 2);
+
+  if(cp.money < halfPrice) { alert('잔액이 부족합니다!'); return; }
+
+  cp.money -= halfPrice;
+  if(!state.props[cellId]) state.props[cellId] = [];
+  state.props[cellId].push({ owner: playerIdx, buildings: 2 });
+  trackPropBought(playerIdx, cellId, halfPrice);
+  addLog(`${cp.name}: 🏠 청약! ${cell.name} 아파트 반값 구매 (${fmt(halfPrice)})`, 'important');
+  updateUI();
+  closeModal();
+  endTurn(isDouble);
+};
+
+function applyCard(card, playerIdx) {
+  const cp = state.players[playerIdx];
+  const opponent = state.players[1 - playerIdx];
+
+  switch(card.type) {
+    case 'money':
+      cp.money += card.amount;
+      break;
+    case 'move': {
+      const preMovePos = cp.pos;
+      cp.pos = card.target;
+      if(card.bonus) cp.money += card.bonus;
+      // 출발점 통과 또는 이동 목표가 이전 위치보다 앞(낮은 번호)이면 한 바퀴 완주
+      if(card.target < preMovePos) {
+        handleLapCompletion(playerIdx);
+      }
+      renderTokens();
+      break;
+    }
+    case 'gotojail':
+      sendToJail(playerIdx);
+      break;
+    case 'jailbreak':
+      cp.jailCard = true;
+      addLog(`${cp.name}: 국세청 탈출 카드 획득! 🃏`, 'important');
+      break;
+    case 'repair': {
+      const houses = allOwnedBy(playerIdx).filter(({entry})=>entry.buildings===1).length;
+      const hotels = allOwnedBy(playerIdx).filter(({entry})=>entry.buildings>=2).length;
+      const fee = houses * card.house + hotels * card.hotel;
+      cp.money -= fee;
+      if(fee > 0) addLog(`${cp.name}: 수리비 ${fmt(fee)} 납부`, 'bad');
+      break;
+    }
+    case 'fromopponent':
+      cp.money += card.amount;
+      opponent.money -= card.amount;
+      break;
+    case 'neartransport': {
+      const transports = [5, 12, 19, 26];
+      const near = transports.find(t => t > cp.pos) || transports[0];
+      if(near <= cp.pos) cp.money += cp.job.salary; // passed go
+      cp.pos = near;
+      renderTokens();
+      break;
+    }
+  }
+
+  if(opponent.money < 0 && state.phase !== 'gameover') {
+    checkBankruptcy(1 - playerIdx, false);
+  }
+  if(cp.money < 0 && state.phase !== 'gameover') {
+    checkBankruptcy(playerIdx, false);
+  }
+}
+
+// ==================== JAIL ====================
+function sendToJail(playerIdx) {
+  const cp = state.players[playerIdx];
+  cp.pos = 7;
+  cp.jailTurns = 3;
+  renderTokens();
+  addLog(`${cp.name}: 국세청으로! 🏛️`, 'bad');
+}
+
+// ==================== 코인 거래소 ====================
+const COINS = [
+  { name:'BTC',  fullName:'비트코인',  icon:'₿',   risk:'보통',   riskColor:'#f5c842',
+    upChance:0.40, upRange:[0.20,0.60], downRange:[-0.20,-0.45] },
+  { name:'ETH',  fullName:'이더리움',  icon:'⟠',   risk:'보통',   riskColor:'#f5c842',
+    upChance:0.40, upRange:[0.20,0.60], downRange:[-0.20,-0.45] },
+  { name:'XRP',  fullName:'리플',      icon:'✕',   risk:'보통',   riskColor:'#f5c842',
+    upChance:0.40, upRange:[0.15,0.55], downRange:[-0.15,-0.40] },
+  { name:'SOL',  fullName:'솔라나',    icon:'◎',   risk:'위험',   riskColor:'#e67e22',
+    upChance:0.30, upRange:[0.50,1.20], downRange:[-0.30,-0.65] },
+  { name:'ADA',  fullName:'에이다',    icon:'₳',   risk:'위험',   riskColor:'#e67e22',
+    upChance:0.30, upRange:[0.40,1.00], downRange:[-0.30,-0.60] },
+  { name:'DOGE', fullName:'도지코인',  icon:'🐕',  risk:'초위험', riskColor:'#e74c3c',
+    upChance:0.20, upRange:[1.00,3.00], downRange:[-0.50,-0.85] },
+  { name:'PEPE', fullName:'페페',      icon:'🐸',  risk:'초위험', riskColor:'#e74c3c',
+    upChance:0.15, upRange:[1.50,5.00], downRange:[-0.60,-0.90] },
+  { name:'USDT', fullName:'테더',      icon:'💵',  risk:'안전',   riskColor:'#82e0aa',
+    upChance:0.60, upRange:[0.03,0.12], downRange:[-0.03,-0.10] },
+  { name:'BNB',  fullName:'바이낸스',  icon:'🔶',  risk:'보통',   riskColor:'#f5c842',
+    upChance:0.40, upRange:[0.20,0.65], downRange:[-0.20,-0.50] },
+  { name:'AVAX', fullName:'아발란체',  icon:'🔺',  risk:'위험',   riskColor:'#e67e22',
+    upChance:0.30, upRange:[0.40,1.10], downRange:[-0.30,-0.65] },
+  { name:'LINK', fullName:'체인링크',  icon:'🔗',  risk:'보통',   riskColor:'#f5c842',
+    upChance:0.40, upRange:[0.20,0.70], downRange:[-0.20,-0.45] },
+  { name:'DOT',  fullName:'폴카닷',    icon:'⚪',  risk:'위험',   riskColor:'#e67e22',
+    upChance:0.30, upRange:[0.40,1.00], downRange:[-0.25,-0.60] },
+  { name:'TRX',  fullName:'트론',      icon:'🔴',  risk:'보통',   riskColor:'#f5c842',
+    upChance:0.40, upRange:[0.15,0.50], downRange:[-0.15,-0.40] },
+  { name:'SHIB', fullName:'시바이누',  icon:'🐶',  risk:'초위험', riskColor:'#e74c3c',
+    upChance:0.18, upRange:[1.20,4.00], downRange:[-0.55,-0.88] },
+  { name:'WIF',  fullName:'독 위프 햇', icon:'🎩', risk:'초위험', riskColor:'#e74c3c',
+    upChance:0.15, upRange:[2.00,6.00], downRange:[-0.65,-0.92] },
+  { name:'SUI',  fullName:'수이',      icon:'💧',  risk:'위험',   riskColor:'#e67e22',
+    upChance:0.30, upRange:[0.50,1.30], downRange:[-0.35,-0.70] },
+  { name:'TON',  fullName:'톤코인',    icon:'💎',  risk:'보통',   riskColor:'#f5c842',
+    upChance:0.40, upRange:[0.20,0.60], downRange:[-0.20,-0.45] },
+];
+
+function calcCoinMultiplier(coin) {
+  const isWin = Math.random() < coin.upChance;
+  if(isWin) {
+    const [min, max] = coin.upRange;
+    return min + Math.random() * (max - min);
+  } else {
+    const [min, max] = coin.downRange;
+    return min + Math.random() * (max - min); // 음수
+  }
+}
+
+function resolveCoinInvestment(cp, ind) {
+  const pending = state._coinInvestment;
+  // 수령액 = 투자금 × (1 + 수익률), 최소 0
+  const returnAmt = Math.max(0, Math.round(pending.amount * (1 + pending.multiplier)));
+  const displayProfit = returnAmt - pending.amount;
+  const isWin = displayProfit > 0;
+  cp.money += returnAmt;
+  state._coinInvestment = null;
+
+  if(cp.isAI) {
+    addLog(`AI: 🪙 ${pending.coin.icon} ${pending.coin.name} 결과 — ${isWin?'수익':'손실'} ${isWin?'+':''}${fmt(displayProfit)} (${Math.round(pending.multiplier*100)}%)`, isWin?'important':'bad');
+    updateUI();
+    ind.textContent = 'AI 진행중...';
+    setTimeout(() => aiTurn(), 400);
+    return;
+  }
+
+  updateUI();
+  const pctLabel = `${isWin?'+':''}${Math.round(pending.multiplier*100)}%`;
+  showModal(isWin ? '📈 코인 수익 실현!' : '📉 코인 손실 발생...',
+    `<div style="text-align:center;padding:10px 0">
+      <div style="font-size:2.8rem;margin-bottom:6px">${pending.coin.icon}</div>
+      <div style="font-size:1.1rem;font-weight:800;margin-bottom:2px">${pending.coin.fullName}</div>
+      <div style="font-size:0.78rem;color:#aaa;margin-bottom:14px">${pending.coin.name} · 투자금 ${fmt(pending.amount)}</div>
+      <div style="font-size:2rem;font-weight:900;color:${isWin?'#82e0aa':'#f1948a'}">${isWin?'+':''}${fmt(displayProfit)}</div>
+      <div style="margin-top:4px;font-size:0.9rem;color:#aaa">${pctLabel}</div>
+      <div style="margin-top:14px;padding:8px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.82rem">
+        💰 현재 잔액: <b style="color:#f5c842">${fmt(cp.money)}</b>
+      </div>
+    </div>`,
+    [{ text: isWin ? '수익 수령! 💰' : '확인 😢', cls:'btn-ok', cb: () => {
+      document.getElementById('btnRoll').disabled = false;
+      ind.textContent = '내 차례 — 주사위를 굴리세요!';
+    }}]
+  );
+}
+
+function handleCoinExchange(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+
+  // 5개 랜덤 선택
+  const listed = [...COINS].sort(() => Math.random() - 0.5).slice(0, 5);
+
+  if(cp.isAI) {
+    const coin = listed[Math.floor(Math.random() * listed.length)];
+    const amount = Math.floor(cp.money * 0.2 / 10000000) * 10000000;
+    if(amount > 0) {
+      cp.money -= amount;
+      state._coinInvestment = { playerIdx, coin, amount, multiplier: calcCoinMultiplier(coin) };
+      addLog(`AI: 🪙 ${coin.icon} ${coin.fullName}(${coin.name}) ${fmt(amount)} 투자! (결과 다음 턴 공개)`, 'important');
+    } else {
+      addLog(`AI: 🪙 코인 거래소 — 투자 자금 부족`, 'normal');
+    }
+    endTurn(isDouble);
+    return;
+  }
+
+  // 코인별 기대 수익/손실 범위 표시 문자열
+  function rangeLabel(coin) {
+    const upMin  = Math.round(coin.upRange[0]  * 100);
+    const upMax  = Math.round(coin.upRange[1]  * 100);
+    const dnMin  = Math.round(Math.abs(coin.downRange[0]) * 100);
+    const dnMax  = Math.round(Math.abs(coin.downRange[1]) * 100);
+    const prob   = Math.round(coin.upChance * 100);
+    return `<span style="color:#82e0aa">▲+${upMin}~${upMax}%</span> `
+         + `<span style="color:#aaa;font-size:0.68rem">(${prob}%)</span> / `
+         + `<span style="color:#f1948a">▼-${dnMin}~${dnMax}%</span>`;
+  }
+
+  const coinRows = listed.map(c => `
+    <label style="display:grid;grid-template-columns:20px 28px 1fr auto;align-items:center;
+      gap:8px;padding:10px 12px;border-radius:10px;margin-bottom:6px;cursor:pointer;
+      background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);
+      transition:border-color 0.15s"
+      onmouseover="this.style.borderColor='rgba(245,200,66,0.4)'"
+      onmouseout="this.style.borderColor=document.querySelector('input[name=coin_pick]:checked')?.value==='${c.name}'?'rgba(245,200,66,0.7)':'rgba(255,255,255,0.08)'">
+      <input type="radio" name="coin_pick" value="${c.name}" style="accent-color:#f5c842;width:16px;height:16px"
+        onchange="document.querySelectorAll('.coin-label').forEach(l=>l.style.borderColor='rgba(255,255,255,0.08)');this.closest('label').style.borderColor='rgba(245,200,66,0.7)'">
+      <span style="font-size:1.4rem;text-align:center;line-height:1">${c.icon}</span>
+      <span>
+        <span style="font-size:0.9rem;font-weight:700">${c.fullName}</span>
+        <span style="font-size:0.72rem;color:#888;margin-left:5px">${c.name}</span><br>
+        <span style="font-size:0.68rem">${rangeLabel(c)}</span>
+      </span>
+      <span style="font-size:0.7rem;padding:2px 8px;border-radius:20px;white-space:nowrap;
+        background:${c.riskColor}22;color:${c.riskColor};border:1px solid ${c.riskColor}55;
+        font-weight:700">${c.risk}</span>
+    </label>`).join('');
+
+  // 투자 금액 프리셋 (만원 단위 고정값 + 보유액 비율)
+  const presetAmounts = [10000000, 50000000, 100000000, 300000000, 500000000]
+    .filter(a => a <= cp.money);
+  if(presetAmounts.length === 0 && cp.money > 0) presetAmounts.push(cp.money);
+  const presets = presetAmounts.map(amt =>
+    `<button onclick="setCoinAmount(${amt})"
+      style="flex:1;min-width:0;padding:7px 4px;background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.18);border-radius:8px;color:#eee;
+      cursor:pointer;font-size:0.75rem;line-height:1.5;font-family:Jua,sans-serif">
+      <b style="color:#f5c842;display:block;font-size:0.85rem">${fmt(amt)}</b>
+    </button>`).join('');
+
+  showModal('🪙 코인 거래소',
+    `<div style="text-align:left">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:0.8rem;color:#aaa">📊 오늘의 상장 코인 — 결과는 <b style="color:#f5c842">다음 턴</b> 공개</span>
+        <span style="font-size:0.78rem;color:#aaa">보유 <b style="color:#f5c842">${fmt(cp.money)}</b></span>
+      </div>
+      ${coinRows}
+      <div style="margin-top:12px;padding:10px;background:rgba(0,0,0,0.2);border-radius:10px">
+        <div style="font-size:0.78rem;color:#aaa;margin-bottom:7px">💰 투자 금액</div>
+        <div style="display:flex;gap:5px;margin-bottom:7px;flex-wrap:wrap">${presets}</div>
+        <input id="coinAmountInput" type="number" placeholder="직접 입력 (원 단위)" min="0" step="10000000"
+          oninput="this.style.borderColor=+this.value>0&&+this.value<=${cp.money}?'rgba(245,200,66,0.6)':'rgba(231,76,60,0.6)'"
+          style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.2);
+          background:rgba(255,255,255,0.06);color:#fff;font-size:0.9rem;box-sizing:border-box">
+      </div>
+    </div>`,
+    [
+      { text:'투자 📈', cls:'btn-yes', cb: () => {
+        const sel = document.querySelector('input[name="coin_pick"]:checked');
+        if(!sel) { alert('코인을 선택하세요!'); return; }
+        const coin = listed.find(c => c.name === sel.value);
+        const raw = +document.getElementById('coinAmountInput').value;
+        const amount = Math.floor(raw / 10000000) * 10000000;
+        if(!amount || amount <= 0) { alert('투자 금액을 입력하세요! (최소 1,000만원)'); return; }
+        if(amount > cp.money) { alert('보유 자금이 부족합니다!'); return; }
+        cp.money -= amount;
+        state._coinInvestment = { playerIdx, coin, amount, multiplier: calcCoinMultiplier(coin) };
+        addLog(`나: 🪙 ${coin.icon} ${coin.fullName}(${coin.name}) ${fmt(amount)} 투자 — 다음 턴 결과 공개`, 'important');
+        updateUI();
+        endTurn(isDouble);
+      }},
+      { text:'패스 ❌', cls:'btn-no', cb: () => endTurn(isDouble) }
+    ]
+  );
+}
+
+window.setCoinAmount = function(amt) {
+  const input = document.getElementById('coinAmountInput');
+  if(input) input.value = amt;
+};
+
+// ==================== 부동산 매매 ====================
+// buy[] = 매매가 (실제 서울 부동산 실거래가 기준)
+// sell[] = 매도가 (매매가의 90% — 중개수수료/세금 감안)
+// [0]=없음, [1]=빌라(소형), [2]=아파트(국평 84㎡), [3]=빌딩(꼬마빌딩)
+// 출처: 국토부 실거래가 / KB부동산 2025~2026 기준
+const BLD_NAMES = ['없음', '빌라', '아파트', '빌딩'];
+
+const CELL_BLD = {
+  // brown — 수유동·도봉동
+  1:  { buy:[0,  200000000,  600000000, 2000000000], sell:[0,  180000000,  540000000, 1800000000] },
+  3:  { buy:[0,  260000000,  700000000, 2500000000], sell:[0,  234000000,  630000000, 2250000000] },
+  // lightblue — 화곡동·봉천동
+  4:  { buy:[0,  360000000, 1000000000, 3500000000], sell:[0,  324000000,  900000000, 3150000000] },
+  6:  { buy:[0,  330000000,  950000000, 3200000000], sell:[0,  297000000,  855000000, 2880000000] },
+  // pink — 방학동·중계동
+  8:  { buy:[0,  470000000, 1350000000, 4500000000], sell:[0,  423000000, 1215000000, 4050000000] },
+  10: { buy:[0,  430000000, 1200000000, 4000000000], sell:[0,  387000000, 1080000000, 3600000000] },
+  // orange — 영등포·여의도
+  11: { buy:[0,  650000000, 1700000000, 6500000000], sell:[0,  585000000, 1530000000, 5850000000] },
+  13: { buy:[0,  750000000, 2200000000, 7500000000], sell:[0,  675000000, 1980000000, 6750000000] },
+  // red — 명동·인사동
+  15: { buy:[0,  800000000, 2200000000, 8000000000], sell:[0,  720000000, 1980000000, 7200000000] },
+  17: { buy:[0,  900000000, 2400000000, 9000000000], sell:[0,  810000000, 2160000000, 8100000000] },
+  // yellow — 합정·신촌
+  18: { buy:[0,  850000000, 2200000000, 8500000000], sell:[0,  765000000, 1980000000, 7650000000] },
+  20: { buy:[0,  900000000, 2300000000, 9000000000], sell:[0,  810000000, 2070000000, 8100000000] },
+  // green — 왕십리·반포
+  22: { buy:[0,  900000000, 2400000000, 9000000000], sell:[0,  810000000, 2160000000, 8100000000] },
+  24: { buy:[0, 1500000000, 4000000000,15000000000], sell:[0, 1350000000, 3600000000,13500000000] },
+  // darkblue — 대치동·압구정
+  25: { buy:[0, 1400000000, 4000000000,18000000000], sell:[0, 1260000000, 3600000000,16200000000] },
+  27: { buy:[0, 1800000000, 5000000000,25000000000], sell:[0, 1620000000, 4500000000,22500000000] },
+  // 교통 (매매가 2억, 매도가 1.8억)
+  5:  { buy:[0, 200000000], sell:[0, 180000000] },
+  12: { buy:[0, 200000000], sell:[0, 180000000] },
+  19: { buy:[0, 200000000], sell:[0, 180000000] },
+  26: { buy:[0, 200000000], sell:[0, 180000000] },
+  // 유틸리티 (매매가 1.5억, 매도가 1.35억)
+  9:  { buy:[0, 150000000], sell:[0, 135000000] },
+  23: { buy:[0, 150000000], sell:[0, 135000000] },
+};
+
+
+// ── props 배열 헬퍼 ──────────────────────────────────────────
+// state.props[cellId] = [{owner, buildings}, ...] 배열
+// 소유 여부 체크
+function propEntries(cellId) { return state.props[cellId] || []; }
+function myEntries(cellId, pi=0) { return propEntries(cellId).filter(e=>e.owner===pi); }
+function otherEntries(cellId, pi=0) { return propEntries(cellId).filter(e=>e.owner!==pi); }
+// 플레이어 전체 소유 목록: [{cellId, entryIdx, entry}]
+function allOwnedBy(pi) {
+  const res = [];
+  Object.entries(state.props).forEach(([id,list])=>{
+    if(!Array.isArray(list)) return;
+    list.forEach((e,i)=>{ if(e.owner===pi) res.push({cellId:+id, entryIdx:i, entry:e}); });
+  });
+  return res;
+}
+// 교통/유틸 단일 소유 (기존 방식 유지 — 칸당 1개 허용)
+function firstEntry(cellId) { const l=propEntries(cellId); return l.length>0?l[0]:null; }
+
+function getBld(cellId) {
+  return CELL_BLD[cellId] || { buy:[0,50000,150000,350000], sell:[0,25000,75000,175000] };
+}
+
+function canTrade(playerIdx) {
+  const cp = state.players[playerIdx];
+  if(cp.money <= 0)       return { ok: false, reason: '💸 보유 금액이 없어 매매할 수 없습니다!' };
+  return { ok: true };
+}
+
+function onCellClick(cellId) {
+  showCellInfoModal(cellId);
+}
+
+function showCellInfoModal(cellId) {
+  const cell = CELLS[cellId];
+
+  // 특수 칸 별도 처리
+  const specialInfo = {
+    go:         { title:'🏁 출발', desc:'통과 시 직업 변경 및 월급 수령.\n대출 이자도 이 시점에 납부됩니다.' },
+    jail:       { title:'🏛️ 국세청', desc:'3턴 동안 세무조사로 이동 불가.\n탈출 카드로 즉시 석방 가능.' },
+    gotojail:   { title:'👮 세무조사', desc:'즉시 국세청으로 이동합니다.' },
+    coinexchange:{ title:'🪙 코인 거래소', desc:'상장된 코인에 투자 가능!\n투자 후 다음 턴에 수익/손실 결과 공개.\n코인 종류별 리스크 수준 상이.' },
+    lotto:      { title:'🎰 로또', desc:'당첨되면 10억원 수령!\n꽝이어도 다음 기회가 있습니다.' },
+    cheongak:   { title:'🏠 청약', desc:'원하는 구역의 빌라를 매매가 50% 반값에 구매!\n미소유 구역 중 선택 가능합니다.' },
+    chance:     { title:'❓ 찬스', desc:'무작위 이벤트 카드를 뽑습니다.' },
+    community:  { title:'🤝 공공기금', desc:'무작위 공공기금 카드를 뽑습니다.' },
+    incentive:  { title:'💰 인센티브 구역', desc:'현재 직업의 인센티브를 받습니다!\n직업별 월급의 0.5~10배 지급.\n취준생은 인센티브 없음.' },
+  };
+
+  if(specialInfo[cell.type]) {
+    const info = specialInfo[cell.type];
+    showModal(info.title,
+      `<p style="line-height:1.8;white-space:pre-line">${info.desc}</p>`,
+      [{ text:'닫기', cls:'btn-ok', cb: closeModal }]
+    );
+    return;
+  }
+
+  const list = propEntries(cellId);
+  const bld = getBld(cellId);
+  const c = COLORS[cell.color] || '#888';
+
+  // 소유자 정보 (다수 가능)
+  let ownerHtml = '';
+  if(list.length > 0) {
+    ownerHtml = list.map(entry => {
+      const owner = state.players[entry.owner];
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;
+          padding:6px 12px;border-radius:8px;margin-bottom:6px;
+          background:${owner.color}22;border:1px solid ${owner.color}55">
+          <span style="font-size:0.85rem">${owner.icon} <b>${owner.name}</b> 소유</span>
+          <span style="font-size:0.82rem;background:${owner.color};color:#fff;padding:2px 8px;border-radius:12px">
+            ${BLD_NAMES[entry.buildings]}
+          </span>
+        </div>`;
+    }).join('');
+  } else {
+    ownerHtml = `
+      <div style="padding:8px 12px;border-radius:8px;margin-bottom:10px;
+        background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+        font-size:0.85rem;color:#aaa">🏚️ 미소유 — 매물 있음</div>`;
+  }
+
+  // 건물별 비용 & 통행료 테이블
+  let tableRows = '';
+  if(bld && cell.rent) {
+    [1,2,3].forEach(i => {
+      const isCurrentLvl = list.some(e => e.buildings === i);
+      const buyCost = bld.buy[i];
+      const rent = cell.rent[i];
+      tableRows += `
+        <tr style="background:${isCurrentLvl ? 'rgba(245,200,66,0.15)' : 'transparent'}">
+          <td style="padding:5px 8px;border-radius:6px;font-weight:${isCurrentLvl?'bold':'normal'}">
+            ${isCurrentLvl ? '▶ ' : ''}${BLD_NAMES[i]}
+          </td>
+          <td style="padding:5px 8px;text-align:right;color:#82e0aa">${fmt(buyCost)}</td>
+          <td style="padding:5px 8px;text-align:right;color:#f1948a">${fmt(rent)}</td>
+        </tr>`;
+    });
+  }
+
+  // 교통/유틸리티 안내
+  let extraHtml = '';
+  if(cell.type === 'transport') {
+    const tFirst = firstEntry(cellId);
+    const tOwner = tFirst ? state.players[tFirst.owner] : null;
+    const owned = tOwner ? allOwnedBy(tFirst.owner).filter(({cellId:tc})=>[5,12,19,26].includes(tc)).length : 0;
+    extraHtml = `
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:4px">
+        <thead><tr style="color:#aaa;border-bottom:1px solid rgba(255,255,255,0.1)">
+          <th style="padding:4px 8px;text-align:left;font-weight:normal">소유 수</th>
+          <th style="padding:4px 8px;text-align:right;font-weight:normal">구매가</th>
+          <th style="padding:4px 8px;text-align:right;font-weight:normal">통행료</th>
+        </tr></thead>
+        <tbody>
+          ${[[1,'5000만'],[2,'1억'],[3,'2억'],[4,'4억']].map(([n,r])=>`
+          <tr><td style="padding:5px 8px">${n}개 소유</td>
+          <td style="padding:5px 8px;text-align:right;color:#82e0aa">${n===1?fmt(cell.price):'-'}</td>
+          <td style="padding:5px 8px;text-align:right;color:#f1948a">${r}</td></tr>`).join('')}
+        </tbody>
+      </table>`;
+  } else if(cell.type === 'utility') {
+    extraHtml = `
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:4px">
+        <thead><tr style="color:#aaa;border-bottom:1px solid rgba(255,255,255,0.1)">
+          <th style="padding:4px 8px;text-align:left;font-weight:normal">조건</th>
+          <th style="padding:4px 8px;text-align:right;font-weight:normal">구매가</th>
+          <th style="padding:4px 8px;text-align:right;font-weight:normal">통행료</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:5px 8px">단독 소유</td><td style="padding:5px 8px;text-align:right;color:#82e0aa">${fmt(cell.price)}</td><td style="padding:5px 8px;text-align:right;color:#f1948a">주사위×1500만</td></tr>
+          <tr><td style="padding:5px 8px">독점 소유</td><td style="padding:5px 8px;text-align:right;color:#82e0aa">-</td><td style="padding:5px 8px;text-align:right;color:#f1948a">주사위×4000만</td></tr>
+        </tbody>
+      </table>`;
+  }
+
+  const content = `
+    <div style="text-align:left">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        ${cell.color ? `<span style="display:inline-block;width:18px;height:18px;background:${c};border-radius:4px;flex-shrink:0"></span>` : `<span style="font-size:1.4rem">${cell.icon||''}</span>`}
+        <div>
+          <div style="font-size:1.05rem;font-weight:bold">${cell.name}</div>
+          <div style="font-size:0.78rem;color:#aaa">${cell.color ? cell.color.toUpperCase() + ' 구역' : cell.type}</div>
+        </div>
+      </div>
+      ${ownerHtml}
+      ${tableRows ? `
+      <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+        <thead>
+          <tr style="color:#aaa;border-bottom:1px solid rgba(255,255,255,0.1)">
+            <th style="padding:4px 8px;text-align:left;font-weight:normal">건물</th>
+            <th style="padding:4px 8px;text-align:right;font-weight:normal">매매가</th>
+            <th style="padding:4px 8px;text-align:right;font-weight:normal">통행료</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>` : extraHtml}
+    </div>`;
+
+  showModal(`📍 ${cell.name}`, content,
+    [{ text:'닫기', cls:'btn-ok', cb: closeModal }]
+  );
+}
+
+// 전체 건물 매매 모달 (직접 호출용 — 현재는 미사용)
+function openTradeModal() {
+  const me = state.players[0];
+  renderTradeModal();
+}
+
+function renderTradeModal() {
+  const me     = state.players[0];
+  const cellId = state._landedCellId;
+  const list   = state.props[cellId] || [];
+  const cell   = CELLS[cellId];
+  // 내 entry — 업그레이드 대상 (여러 채면 가장 낮은 레벨 우선)
+  const myEntries = list.filter(e => e.owner === 0);
+  const prop = myEntries.length > 0
+    ? myEntries.reduce((a,b) => a.buildings <= b.buildings ? a : b)
+    : null;
+  // 실제 prop 인덱스 (list 내 위치)
+  state._tradeEntryIdx = prop ? list.indexOf(prop) : -1;
+
+  const bld = getBld(cellId);
+  const c   = COLORS[cell.color] || '#999';
+  const lvl = prop ? prop.buildings : 0;
+
+  let radios = '';
+  for(let i = 0; i <= 3; i++) {
+    const isSelected = lvl === i;
+    const cost   = i > lvl ? bld.buy[i]  - bld.buy[lvl]  : 0;
+    const refund = i < lvl ? bld.sell[lvl] - (i > 0 ? bld.sell[i] : 0) : 0;
+    const affordable = i <= lvl || me.money >= cost;
+
+    let label = BLD_NAMES[i];
+    if(i > lvl)      label += ` <span style="color:#82e0aa;font-size:0.68rem">매입 ${fmt(cost)}</span>`;
+    else if(i < lvl) label += ` <span style="color:#f1948a;font-size:0.68rem">환급 ${fmt(refund)}</span>`;
+    else             label += ` <span style="color:#aaa;font-size:0.68rem">(현재)</span>`;
+
+    radios += `
+      <label style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;
+        cursor:${affordable?'pointer':'not-allowed'};
+        background:${isSelected?'rgba(245,200,66,0.2)':'rgba(255,255,255,0.05)'};
+        border:1px solid ${isSelected?'rgba(245,200,66,0.6)':'rgba(255,255,255,0.1)'};
+        opacity:${affordable?1:0.4};margin-bottom:4px">
+        <input type="radio" name="bld_single" value="${i}" ${isSelected?'checked':''} ${affordable?'':'disabled'}
+          onchange="updateTradeCost()" style="accent-color:#f5c842">
+        <span style="font-size:0.82rem">${label}</span>
+      </label>`;
+  }
+
+  const content = `
+    <div style="text-align:left">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <span style="display:inline-block;width:14px;height:14px;background:${c};border-radius:3px"></span>
+        <b style="font-size:1rem">${cell.name}</b>
+        <span style="font-size:0.75rem;color:#aaa">현재: ${BLD_NAMES[lvl]}</span>
+      </div>
+      ${radios}
+      <div style="margin-top:10px;padding:8px;background:rgba(245,200,66,0.1);border-radius:8px;
+        display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.78rem;color:#aaa">💰 잔액: <b style="color:#f5c842">${fmt(me.money)}</b></span>
+        <span style="font-size:0.85rem">변동: <b id="tradeCostDisplay" style="color:#f5c842">0원</b></span>
+      </div>
+    </div>`;
+
+  document.getElementById('modalTitle').textContent = `🏠 ${cell.name} 부동산 매매`;
+  document.getElementById('modalContent').innerHTML = content;
+  const btns = document.getElementById('modalBtns');
+  btns.innerHTML = '';
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'btn-yes';
+  confirmBtn.textContent = '거래 확정 ✅';
+  confirmBtn.onclick = () => confirmTrade([[String(cellId), prop]]);
+  btns.appendChild(confirmBtn);
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-no';
+  cancelBtn.textContent = '취소 ❌';
+  cancelBtn.onclick = () => document.getElementById('modalOverlay').classList.remove('show');
+  btns.appendChild(cancelBtn);
+
+  document.getElementById('modalOverlay').classList.add('show');
+  updateTradeCost();
+}
+
+function updateTradeCost() {
+  const me   = state.players[0];
+  const cellId = state._landedCellId;
+  const list = state.props[cellId] || [];
+  const prop = state._tradeEntryIdx >= 0 ? list[state._tradeEntryIdx] : null;
+  if(!prop) return;
+  const bld = getBld(cellId);
+  const sel = document.querySelector(`input[name="bld_single"]:checked`);
+  if(!sel) return;
+  const newLvl = +sel.value;
+  const cur = prop.buildings;
+  let total = 0;
+  if(newLvl > cur)      total = -(bld.buy[newLvl]  - bld.buy[cur]);
+  else if(newLvl < cur) total =  (bld.sell[cur] - (newLvl > 0 ? bld.sell[newLvl] : 0));
+  const el = document.getElementById('tradeCostDisplay');
+  if(!el) return;
+  if(total >= 0) {
+    el.style.color = '#82e0aa';
+    el.textContent = `+${fmt(total)} 수입`;
+  } else {
+    el.style.color = (me.money + total < 0) ? '#f1948a' : '#f5c842';
+    el.textContent = `${fmt(Math.abs(total))} 지출`;
+  }
+}
+
+function confirmTrade(owned) {
+  const me = state.players[0];
+  let totalCost = 0;
+  const changes = [];
+
+  owned.forEach(([id, prop]) => {
+    const sel = document.querySelector(`input[name="bld_single"]:checked`);
+    if(!sel) return;
+    const bld = getBld(+id);
+    const newLvl = +sel.value;
+    const cur = prop.buildings;
+    if(newLvl === cur) return;
+
+    if(newLvl > cur) {
+      const cost = bld.buy[newLvl] - bld.buy[cur];
+      totalCost += cost;
+      changes.push({ id, prop, newLvl, delta: -cost });
+    } else {
+      const refund = bld.sell[cur] - (newLvl > 0 ? bld.sell[newLvl] : 0);
+      totalCost -= refund;
+      changes.push({ id, prop, newLvl, delta: refund });
+    }
+  });
+
+  if(me.money - totalCost < 0) {
+    showModal('💸 자금 부족',
+      `<p>총 지출 ${fmt(totalCost)}이 보유금액 ${fmt(me.money)}을 초과합니다!</p>`,
+      [{ text:'다시 선택', cls:'btn-ok', cb: () => renderTradeModal() }]);
+    return;
+  }
+
+  if(changes.length === 0) {
+    document.getElementById('modalOverlay').classList.remove('show');
+    return;
+  }
+
+  changes.forEach(({ id, prop, newLvl, delta }) => {
+    const cell = CELLS[+id];
+    const list = state.props[+id];
+    if(newLvl === 0 && list) {
+      // 레벨 0 = 매도 (entry 제거)
+      const idx2 = list.indexOf(prop);
+      if(idx2 !== -1) list.splice(idx2, 1);
+      if(list.length === 0) delete state.props[+id];
+    } else {
+      prop.buildings = newLvl;
+    }
+    me.money += delta;
+    const dir = delta > 0 ? `매각 +${fmt(delta)}` : `매입 -${fmt(-delta)}`;
+    addLog(`나: ${cell.name} → ${newLvl === 0 ? '매도' : BLD_NAMES[newLvl]} ${dir}`, 'important');
+  });
+
+  document.getElementById('modalOverlay').classList.remove('show');
+  updateUI();
+}
+
+function renderBuildPanel() {
+  const content = document.getElementById('buildContent');
+  const owned = allOwnedBy(0).filter(({cellId})=>CELLS[cellId].type==='prop');
+
+  if(owned.length === 0) {
+    content.innerHTML = '<span style="color:#aaa;font-size:0.8rem">아직 소유한 땅이 없습니다.</span>';
+    return;
+  }
+
+  content.innerHTML = '<div class="properties-list">' +
+    owned.map(({cellId, entry}) => {
+      const cell = CELLS[cellId];
+      const bld  = getBld(cellId);
+      const c    = COLORS[cell.color] || '#999';
+      const lvl  = entry.buildings;
+      const nextPrice = lvl < 3 ? fmt(bld.buy[lvl+1] - bld.buy[lvl]) : '최고등급';
+      return `<span class="prop-tag"
+        style="background:${c}22;border-color:${c}66;color:#fff;cursor:default"
+        title="다음 매입: ${nextPrice}">
+        ${cell.name} [${BLD_NAMES[lvl]}]
+      </span>`;
+    }).join('') + '</div>';
+}
+
+// AI 건물 업그레이드 (첫 바퀴 이후, 자금 여유 있을 때)
+function aiUpgradeBuildings() {
+  const ai = state.players[1];
+  if(ai.money <= 0) return;
+  const owned = allOwnedBy(1).filter(({cellId})=>CELLS[cellId].type==='prop');
+  for(const {cellId: id, entry: prop} of owned) {
+    if(prop.buildings < 3) {
+      const bld  = getBld(id);
+      const cost = bld.buy[prop.buildings+1] - bld.buy[prop.buildings];
+      if(ai.money >= cost * 2) {
+        ai.money -= cost;
+        prop.buildings++;
+        addLog(`AI: ${CELLS[id].name} → ${BLD_NAMES[prop.buildings]} 매입!`, 'important');
+      }
+    }
+  }
+}
+// ==================== TERRITORY MAP ====================
+const COLOR_GROUPS = [
+  { color:'brown',    label:'노원/도봉', cells:[1,3] },
+  { color:'lightblue',label:'관악/강서', cells:[4,6] },
+  { color:'pink',     label:'강북',      cells:[8,10] },
+  { color:'orange',   label:'영등포',    cells:[11,13] },
+  { color:'red',      label:'용산/중구', cells:[15,17] },
+  { color:'yellow',   label:'마포',      cells:[18,20] },
+  { color:'green',    label:'성동/강남', cells:[22,24] },
+  { color:'darkblue', label:'강남',      cells:[25,27] },
+];
+
+function renderTerritoryPanel() {
+  const el = document.getElementById('territoryContent');
+  if(!el) return;
+
+  const myTotal  = allOwnedBy(0).length;
+  const aiTotal  = allOwnedBy(1).length;
+  const allTotal = CELLS.filter(c => ['prop','transport','utility'].includes(c.type)).length;
+  const free     = allTotal - myTotal - aiTotal;
+  const myPct    = (myTotal / allTotal * 100).toFixed(0);
+  const aiPct    = (aiTotal / allTotal * 100).toFixed(0);
+
+  // 전체 요약 바
+  const summary = `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:4px">
+        <span style="color:#e74c3c;font-weight:700">🚀 나 ${myTotal}칸 (${myPct}%)</span>
+        <span style="color:#aaa;font-size:0.68rem">빈칸 ${free}</span>
+        <span style="color:#3498db;font-weight:700">${aiTotal}칸 (${aiPct}%) 🤖</span>
+      </div>
+      <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,0.07)">
+        ${myTotal > 0  ? `<div style="width:${myPct}%;background:linear-gradient(90deg,#c0392b,#e74c3c);transition:width 0.5s"></div>` : ''}
+        ${free    > 0  ? `<div style="width:${(free/allTotal*100).toFixed(0)}%;background:rgba(255,255,255,0.1)"></div>` : ''}
+        ${aiTotal > 0  ? `<div style="width:${aiPct}%;background:linear-gradient(90deg,#2471a3,#3498db);transition:width 0.5s"></div>` : ''}
+      </div>
+    </div>`;
+
+  const BLD_ICONS = ['', '🏠', '🏢', '🏙️'];
+
+  const rows = COLOR_GROUPS.map(g => {
+    const c = COLORS[g.color] || '#999';
+    const total    = g.cells.length;
+    const myCount  = g.cells.filter(id => (state.props[id]||[]).some(e=>e.owner===0)).length;
+    const aiCount  = g.cells.filter(id => (state.props[id]||[]).some(e=>e.owner===1)).length;
+    const freeCount = total - myCount - aiCount;
+    const myW  = (myCount  / total * 100).toFixed(0);
+    const aiW  = (aiCount  / total * 100).toFixed(0);
+    const freeW = (freeCount / total * 100).toFixed(0);
+
+    // 내 건물 정보
+    const myBuildings = g.cells
+      .filter(id => (state.props[id]||[]).some(e=>e.owner===0 && e.buildings>0))
+      .map(id => {
+        const entry = (state.props[id]||[]).find(e=>e.owner===0);
+        const lvl = entry ? entry.buildings : 0;
+        return `<span class="territory-building-tag" style="color:#e74c3c;border-color:rgba(231,76,60,0.3)">${BLD_ICONS[lvl]} ${CELLS[id].name.replace('동','')}</span>`;
+      }).join('');
+
+    const aiBuildings = g.cells
+      .filter(id => (state.props[id]||[]).some(e=>e.owner===1 && e.buildings>0))
+      .map(id => {
+        const entry = (state.props[id]||[]).find(e=>e.owner===1);
+        const lvl = entry ? entry.buildings : 0;
+        return `<span class="territory-building-tag" style="color:#3498db;border-color:rgba(52,152,219,0.3)">${BLD_ICONS[lvl]} ${CELLS[id].name.replace('동','')}</span>`;
+      }).join('');
+
+    // 독점 표시
+    const myMonopoly  = myCount  === total && total > 1;
+    const aiMonopoly  = aiCount  === total && total > 1;
+    const monopolyTag = myMonopoly  ? `<span style="font-size:0.6rem;background:rgba(231,76,60,0.25);color:#e74c3c;border-radius:8px;padding:1px 5px">👑독점</span>` :
+                        aiMonopoly  ? `<span style="font-size:0.6rem;background:rgba(52,152,219,0.25);color:#3498db;border-radius:8px;padding:1px 5px">👑독점</span>` : '';
+
+    return `
+      <div class="territory-row">
+        <div class="territory-header">
+          <div class="territory-label">
+            <div class="territory-dot" style="background:${c}"></div>
+            <span>${g.label}</span>
+            ${monopolyTag}
+          </div>
+          <div class="territory-counts">
+            ${myCount  > 0 ? `<span style="color:#e74c3c">나 ${myCount}</span>`  : ''}
+            ${aiCount  > 0 ? `<span style="color:#3498db">AI ${aiCount}</span>` : ''}
+            ${freeCount > 0 ? `<span style="color:#666">${freeCount}빈칸</span>` : ''}
+          </div>
+        </div>
+        <div class="territory-bar-wrap">
+          ${myCount  > 0 ? `<div style="width:${myW}%;background:#e74c3c;transition:width 0.4s"></div>` : ''}
+          ${freeCount > 0 ? `<div style="width:${freeW}%;background:rgba(255,255,255,0.08)"></div>` : ''}
+          ${aiCount  > 0 ? `<div style="width:${aiW}%;background:#3498db;transition:width 0.4s"></div>` : ''}
+        </div>
+        ${myBuildings || aiBuildings ? `<div class="territory-buildings">${myBuildings}${aiBuildings}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  el.innerHTML = summary + rows;
+}
+
+// ==================== STATS TRACKING ====================
+function trackSalary(playerIdx, salary, jobName) {
+  const p = state.players[playerIdx];
+  p.stats.totalSalary += salary;
+  p.stats.totalIncome += salary;
+  if(salary > 0) p.stats.bestJob = jobName;
+}
+
+function trackRentPaid(playerIdx, amount) {
+  state.players[playerIdx].stats.totalRent += amount;
+}
+
+function trackPropBought(playerIdx, cellId, cost) {
+  state.players[playerIdx].stats.propsBought++;
+  if(!state._firstPropDone) {
+    state._firstPropDone = true;
+    state._pendingFirstPropEvent = { playerIdx, cellId, cost };
+  }
+}
+
+// ==================== GAME OVER STATS ====================
+function showGameOverStats(winnerIdx, loserIdx, reason) {
+  const winner = state.players[winnerIdx];
+  const loser  = state.players[loserIdx];
+  state.phase  = 'gameover';
+
+  const my = state.players[0];
+  const ai = state.players[1];
+  const myNW = getNetWorth(0);
+  const aiNW = getNetWorth(1);
+
+  const reasonBadge = {
+    '파산':       { icon:'💸', label:'파산으로 게임 종료', color:'#e74c3c' },
+    '자산목표달성': { icon:'🏆', label:'순자산 100억 달성!', color:'#f1c40f' },
+    '턴종료':     { icon:'⏰', label:'50바퀴 종료 — 순자산 비교', color:'#3498db' },
+  }[reason] || { icon:'🎮', label:'게임 종료', color:'#aaa' };
+
+  const myOwned  = allOwnedBy(0);
+  const aiOwned  = allOwnedBy(1);
+  const myProps  = myOwned.length;
+  const aiProps  = aiOwned.length;
+  const myBldgs  = myOwned.filter(({entry})=>entry.buildings>0).length;
+  const aiBldgs  = aiOwned.filter(({entry})=>entry.buildings>0).length;
+  const myMaxBld = Math.max(0,...myOwned.map(({entry})=>entry.buildings));
+  const aiMaxBld = Math.max(0,...aiOwned.map(({entry})=>entry.buildings));
+  const BLD_NAMES_FULL = ['없음','빌라','아파트','빌딩'];
+
+  // 자산 비율
+  const totalMoney = Math.max(1, Math.max(0,my.money) + Math.max(0,ai.money));
+  const myMoneyPct = (Math.max(0,my.money) / totalMoney * 100).toFixed(0);
+  const aiMoneyPct = (100 - +myMoneyPct);
+
+  const row = (label, myVal, aiVal, myBetter) => `
+    <tr>
+      <td class="stats-label">${label}</td>
+      <td class="stats-my" style="${myBetter===0?'background:rgba(231,76,60,0.12);border-radius:4px':''}">${myVal}</td>
+      <td class="stats-ai" style="${myBetter===1?'background:rgba(52,152,219,0.12);border-radius:4px':''}">${aiVal}</td>
+    </tr>`;
+
+  const myMoneyBetter = my.money >= ai.money ? 0 : 1;
+  const myPropsBetter = myProps >= aiProps ? 0 : 1;
+
+  const statsHtml = `
+    <div class="stats-winner-banner">
+      <div style="font-size:0.78rem;padding:3px 12px;border-radius:12px;margin-bottom:6px;
+        background:${reasonBadge.color}33;color:${reasonBadge.color};display:inline-block">
+        ${reasonBadge.icon} ${reasonBadge.label}
+      </div>
+      <div class="stats-winner-icon">${winnerIdx === 0 ? '🏆' : '🤖'}</div>
+      <div class="stats-winner-name">${winner.name} 승리!</div>
+      <div class="stats-turns">총 ${state.totalTurns}턴 · ${Math.max(my.laps,ai.laps)}바퀴</div>
+    </div>
+
+    <div style="display:flex;height:12px;border-radius:6px;overflow:hidden;margin:10px 0 4px;background:rgba(139,69,19,0.2)">
+      <div style="width:${myMoneyPct}%;background:linear-gradient(90deg,#c0392b,#e74c3c);transition:width 0.6s;display:flex;align-items:center;justify-content:center">
+        ${+myMoneyPct > 15 ? `<span style="font-size:0.6rem;color:#fff;font-weight:700">${myMoneyPct}%</span>` : ''}
+      </div>
+      <div style="width:${aiMoneyPct}%;background:linear-gradient(90deg,#2471a3,#3498db);display:flex;align-items:center;justify-content:center">
+        ${aiMoneyPct > 15 ? `<span style="font-size:0.6rem;color:#fff;font-weight:700">${aiMoneyPct}%</span>` : ''}
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#888;margin-bottom:10px">
+      <span style="color:#e74c3c">🚀 나</span>
+      <span>자산 비율</span>
+      <span style="color:#3498db">AI 🤖</span>
+    </div>
+
+    <table class="stats-table">
+      <thead>
+        <tr>
+          <th class="stats-label" style="text-align:left">항목</th>
+          <th style="color:#e74c3c;text-align:center">🚀 나</th>
+          <th style="color:#3498db;text-align:center">🤖 AI</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${row('순자산', fmt(myNW), fmt(aiNW), myNW>=aiNW?0:1)}
+        ${row('현금', fmt(my.money), fmt(ai.money), myMoneyBetter)}
+        ${row('대출잔액', fmt(my.loan||0), fmt(ai.loan||0), (my.loan||0)<=(ai.loan||0)?0:1)}
+        ${row('소유 땅', `${myProps}칸`, `${aiProps}칸`, myPropsBetter)}
+        ${row('건물 보유', `${myBldgs}채`, `${aiBldgs}채`, myBldgs>=aiBldgs?0:1)}
+        ${row('최고 건물', BLD_NAMES_FULL[myMaxBld], BLD_NAMES_FULL[aiMaxBld], myMaxBld>=aiMaxBld?0:1)}
+        ${row('총 월급', fmt(my.stats.totalSalary), fmt(ai.stats.totalSalary), my.stats.totalSalary>=ai.stats.totalSalary?0:1)}
+        ${row('통행료 납부', fmt(my.stats.totalRent), fmt(ai.stats.totalRent), my.stats.totalRent<=ai.stats.totalRent?0:1)}
+        ${row('땅 구매 횟수', `${my.stats.propsBought}회`, `${ai.stats.propsBought}회`, my.stats.propsBought>=ai.stats.propsBought?0:1)}
+        ${row('최고 직업', `${my.stats.bestJob}`, `${ai.stats.bestJob}`, -1)}
+        ${row('완주 바퀴', `${my.laps}바퀴`, `${ai.laps}바퀴`, my.laps>=ai.laps?0:1)}
+      </tbody>
+    </table>`;
+
+  showModal('🎮 게임 종료 결산', statsHtml,
+    [{ text:'다시하기 🎲', cls:'btn-ok', cb: () => location.reload() }]
+  );
+}
+// ==================== 대출 시스템 ====================
+// 금리: 연 4.5% (2025 주담대 기준), 바퀴당 이자 = 대출잔액 × 4.5% / 12
+// 한도: 보유 부동산 가치 합계의 70% (LTV 70%)
+const LOAN_RATE_PER_LAP = 0.045 / 12; // 월 이자율 (바퀴 = 1개월 개념)
+
+function getLoanLimit(playerIdx) {
+  const propValue = allOwnedBy(playerIdx).reduce((sum, {cellId, entry}) => {
+    const bld = getBld(cellId);
+    return sum + (bld ? bld.sell[entry.buildings] : 0);
+  }, 0);
+  return Math.floor(propValue * 0.7);
+}
+
+function getLoanAvailable(playerIdx) {
+  const cp = state.players[playerIdx];
+  return Math.max(0, getLoanLimit(playerIdx) - (cp.loan || 0));
+}
+
+// ==================== 부동산 시세 변동 ====================
+// 누군가 5바퀴 돌 때마다 발동 (5, 10, 15, 20 ... 바퀴)
+function checkMarketFluctuation(triggerPlayerIdx) {
+  const maxLaps = Math.max(state.players[0].laps || 0, state.players[1].laps || 0);
+  if(maxLaps === 0 || maxLaps % 5 !== 0) return;
+  // 이미 이 바퀴에서 발동됐으면 스킵
+  if(state._lastFluctuationLap === maxLaps) return;
+  state._lastFluctuationLap = maxLaps;
+
+  // 구역별 랜덤 시세 변동: -40% ~ +60% (양수 편향)
+  const changes = [];
+  state._marketChanges = {};
+  Object.keys(CELL_BLD).forEach(id => {
+    const r = (Math.random() * 100) - 40;
+    const pct = Math.round(r / 10) * 10;
+    if(pct === 0) return;
+    const factor = 1 + pct / 100;
+    const bld = CELL_BLD[id];
+    bld.buy  = bld.buy.map(v => Math.round(v * factor / 10000000) * 10000000);
+    bld.sell = bld.sell.map(v => Math.round(v * factor / 10000000) * 10000000);
+    const cell = CELLS[+id];
+    state._marketChanges[id] = pct;
+    changes.push({ name: cell.name, pct, up: pct > 0 });
+  });
+
+  const ups   = changes.filter(c => c.up);
+  const downs = changes.filter(c => !c.up);
+
+  const upHtml   = ups.slice(0,5).map(c =>
+    `<span style="color:#82e0aa">↑ ${c.name} +${c.pct}%</span>`).join('<br>');
+  const downHtml = downs.slice(0,5).map(c =>
+    `<span style="color:#f1948a">↓ ${c.name} ${c.pct}%</span>`).join('<br>');
+
+  const content = `
+    <div style="text-align:left">
+      <div style="padding:8px 12px;background:rgba(255,255,255,0.06);border-radius:8px;margin-bottom:10px;font-size:0.82rem;color:#aaa">
+        📊 ${maxLaps}바퀴 완주 — 서울 부동산 시장이 요동쳤습니다!
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.82rem;line-height:1.9">
+        <div><b style="color:#82e0aa">📈 상승</b><br>${upHtml || '<span style="color:#aaa">없음</span>'}</div>
+        <div><b style="color:#f1948a">📉 하락</b><br>${downHtml || '<span style="color:#aaa">없음</span>'}</div>
+      </div>
+      <p style="margin-top:10px;font-size:0.78rem;color:#aaa">💡 보유 부동산 매도가도 함께 변동됩니다.</p>
+    </div>`;
+
+  addLog(`📊 ${maxLaps}바퀴 시세 변동! 상승 ${ups.length}곳 / 하락 ${downs.length}곳`, 'important');
+
+  renderCellOwnership();
+
+  // landOn에서 이동 완료 후 순서 보장하여 표시
+  state._pendingMarketEvent = { content };
+}
+
+// ==================== 부동산 매도 ====================
+function openSellModal() {
+  const me = state.players[0];
+  // 내 소유 entry 목록 (cellId, entryIdx 포함)
+  const owned = [];
+  Object.entries(state.props).forEach(([id, list]) => {
+    if(!Array.isArray(list)) return;
+    list.forEach((entry, ei) => {
+      if(entry.owner === 0) owned.push({ cellId: +id, entryIdx: ei, entry });
+    });
+  });
+
+  if(owned.length === 0) {
+    showModal('🏷️ 매도', '<p style="color:#aaa">보유 중인 부동산이 없습니다.</p>',
+      [{ text:'닫기', cls:'btn-ok', cb: closeModal }]);
+    return;
+  }
+
+  const rows = owned.map(({ cellId, entryIdx, entry }, i) => {
+    const cell = CELLS[cellId];
+    const bld  = getBld(cellId);
+    const lvl  = entry.buildings;
+    const sellPrice = bld.sell[lvl];
+    const col  = COLORS[cell.color] || '#888';
+    return `
+      <label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;
+        margin-bottom:6px;background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.12);cursor:pointer">
+        <input type="radio" name="sell_prop" value="${i}" style="accent-color:#e74c3c">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+          background:${col};flex-shrink:0"></span>
+        <span style="flex:1;font-size:0.85rem">
+          <b>${cell.name}</b>
+          ${cell.type === 'prop' ? `<span style="color:#aaa;font-size:0.75rem;margin-left:4px">[${BLD_NAMES[lvl]}]</span>` : ''}
+        </span>
+        <b style="color:#82e0aa;font-size:0.85rem">${fmt(sellPrice)}</b>
+      </label>`;
+  }).join('');
+
+  showModal('🏷️ 부동산 매도',
+    `<div>
+      <p style="font-size:0.82rem;color:#aaa;margin-bottom:10px">
+        💰 보유액 <b style="color:#f5c842">${fmt(me.money)}</b> · 매도 후 해당 채 소멸
+      </p>
+      ${rows}
+    </div>`,
+    [
+      { text:'매도 ✅', cls:'btn-yes', cb: () => {
+        const sel = document.querySelector('input[name="sell_prop"]:checked');
+        if(!sel) { alert('매도할 부동산을 선택하세요!'); return; }
+        const i = +sel.value;
+        const { cellId, entryIdx, entry } = owned[i];
+        const bld  = getBld(cellId);
+        const cell = CELLS[cellId];
+        const price = bld.sell[entry.buildings];
+        me.money += price;
+        const list = state.props[cellId];
+        list.splice(entryIdx, 1);
+        if(list.length === 0) delete state.props[cellId];
+        const bldLabel = cell.type === 'prop' ? ` [${BLD_NAMES[entry.buildings]}]` : '';
+        addLog(`나: 🏷️ ${cell.name}${bldLabel} 매도 +${fmt(price)}`, 'important');
+        closeModal();
+        updateUI();
+        renderCellOwnership();
+      }},
+      { text:'취소 ❌', cls:'btn-no', cb: closeModal }
+    ]
+  );
+}
+
+
+function payLoanInterest(playerIdx) {
+  const cp = state.players[playerIdx];
+  if(!cp.loan || cp.loan <= 0) return;
+  const interest = Math.round(cp.loan * LOAN_RATE_PER_LAP);
+  cp.money -= interest;
+  addLog(`${cp.name}: 🏦 대출이자 납부 ${fmt(interest)} (잔액 ${fmt(cp.loan)}, 연4.5%)`, 'bad');
+  if(cp.money < 0 && state.phase !== 'gameover') checkBankruptcy(playerIdx, false);
+}
+
+function openLoanModal() {
+  const playerIdx = 0;
+  const cp = state.players[playerIdx];
+  const limit = getLoanLimit(playerIdx);
+  const available = getLoanAvailable(playerIdx);
+  const interest = Math.round(available * LOAN_RATE_PER_LAP);
+
+  if(limit === 0) {
+    showModal('🏦 대출 불가',
+      `<p>보유 부동산이 없어 대출을 받을 수 없습니다.<br>먼저 구역을 구매하세요!</p>`,
+      [{ text:'확인', cls:'btn-ok', cb: closeModal }]
+    );
+    return;
+  }
+  if(available <= 0) {
+    showModal('🏦 대출 한도 초과',
+      `<p>LTV 70% 한도를 모두 사용했습니다.<br>상환 후 추가 대출이 가능합니다.</p>`,
+      [{ text:'확인', cls:'btn-ok', cb: closeModal }]
+    );
+    return;
+  }
+
+  showModal('🏦 은행 대출',
+    `<div style="font-size:0.9rem;line-height:1.8">
+      <div style="background:#fef9e7;padding:10px;border-radius:8px;margin-bottom:12px">
+        <div>📊 부동산 담보가치: <b>${fmt(Math.floor(getLoanLimit(playerIdx)/0.7))}</b></div>
+        <div>🔒 LTV 한도 (70%): <b>${fmt(limit)}</b></div>
+        <div>💳 기존 대출잔액: <b style="color:#e74c3c">${fmt(cp.loan||0)}</b></div>
+        <div>✅ 추가 대출 가능액: <b style="color:#27ae60">${fmt(available)}</b></div>
+        <div>📅 바퀴당 이자 (연4.5%/12): <b style="color:#e74c3c">~${fmt(interest)}</b></div>
+      </div>
+      <div style="margin-bottom:8px">대출 금액 선택:</div>
+      <div style="display:flex;flex-direction:column;gap:6px" id="loanOptions">
+        ${[0.25, 0.5, 0.75, 1.0].map(r => {
+          const amt = Math.floor(available * r / 10000000) * 10000000;
+          if(amt <= 0) return '';
+          return `<button onclick="doLoan(${amt})"
+            style="padding:8px;background:#e67e22;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.88rem">
+            ${fmt(amt)} 대출 (이자 ${fmt(Math.round(amt*LOAN_RATE_PER_LAP))}/바퀴)
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`,
+    [{ text:'취소', cls:'btn-cancel', cb: closeModal }]
+  );
+}
+
+window.doLoan = function(amount) {
+  const cp = state.players[0];
+  cp.loan = (cp.loan || 0) + amount;
+  cp.money += amount;
+  addLog(`나: 🏦 대출 ${fmt(amount)} 실행 (총 대출잔액 ${fmt(cp.loan)})`, 'important');
+  updateUI();
+  closeModal();
+};
+
+function openRepayModal() {
+  const cp = state.players[0];
+  if(!cp.loan || cp.loan <= 0) {
+    showModal('💳 상환', `<p>상환할 대출이 없습니다.</p>`, [{ text:'확인', cls:'btn-ok', cb: closeModal }]);
+    return;
+  }
+  showModal('💳 대출 상환',
+    `<div style="font-size:0.9rem;line-height:1.8">
+      <div style="background:#eafaf1;padding:10px;border-radius:8px;margin-bottom:12px">
+        <div>💳 현재 대출잔액: <b style="color:#e74c3c">${fmt(cp.loan)}</b></div>
+        <div>💰 보유 현금: <b>${fmt(cp.money)}</b></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        ${[0.25, 0.5, 1.0].map(r => {
+          const amt = Math.min(Math.floor(cp.loan * r / 10000000) * 10000000, cp.money);
+          if(amt <= 0) return '';
+          return `<button onclick="doRepay(${amt})"
+            style="padding:8px;background:#27ae60;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.88rem">
+            ${fmt(amt)} 상환 ${r===1?'(전액)':r===0.5?'(50%)':'(25%)'}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`,
+    [{ text:'취소', cls:'btn-cancel', cb: closeModal }]
+  );
+}
+
+window.doRepay = function(amount) {
+  const cp = state.players[0];
+  if(cp.money < amount) { alert('현금이 부족합니다!'); return; }
+  cp.money -= amount;
+  cp.loan = Math.max(0, cp.loan - amount);
+  addLog(`나: 💳 대출 ${fmt(amount)} 상환 (잔액 ${fmt(cp.loan)})`, 'important');
+  updateUI();
+  closeModal();
+};
+
+function updateLoanUI() {
+  const cp = state.players[0];
+  const loanInfo = document.getElementById('myLoanInfo');
+  const btnLoan = document.getElementById('btnLoan');
+  const btnRepay = document.getElementById('btnRepay');
+  if(!loanInfo) return;
+  const isMyTurn = state.currentPlayer === 0 && state.phase === 'roll';
+  if(cp.loan > 0) {
+    const interest = Math.round(cp.loan * LOAN_RATE_PER_LAP);
+    loanInfo.style.display = 'block';
+    loanInfo.innerHTML = `🏦 대출잔액 <b>${fmt(cp.loan)}</b> · 이자 <b>${fmt(interest)}</b>/바퀴`;
+  } else {
+    loanInfo.style.display = 'none';
+  }
+  btnLoan.style.display = isMyTurn ? 'block' : 'none';
+  btnRepay.style.display = (isMyTurn && cp.loan > 0) ? 'block' : 'none';
+}
+
+// AI 대출 판단: 살 수 있는 부동산이 있는데 돈이 부족하면 자동 대출
+function aiLoanIfNeeded() {
+  const ai = state.players[1];
+  const available = getLoanAvailable(1);
+  if(available <= 0) return;
+  const wantToBuy = CELLS.find(c =>
+    c.type === 'prop' && !state.props[c.id] &&
+    ai.money < getBld(c.id).buy[1] * 1.2 && (ai.money + available) >= getBld(c.id).buy[1] * 1.2
+  );
+  if(wantToBuy) {
+    const needed = Math.ceil((getBld(wantToBuy.id).buy[1] * 1.2 - ai.money) / 10000000) * 10000000;
+    const loanAmt = Math.min(needed, available);
+    ai.loan = (ai.loan || 0) + loanAmt;
+    ai.money += loanAmt;
+    addLog(`AI: 🏦 대출 ${fmt(loanAmt)} 실행 (목표: ${wantToBuy.name})`, 'important');
+  }
+}
+
+function checkBankruptcy(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  if(cp.money < 0) {
+    addLog(`${cp.name}: 파산! 게임 종료`, 'bad');
+    showGameOverStats(1 - playerIdx, playerIdx, '파산');
+    return;
+  }
+  endTurn(isDouble);
+}
+
+// 순자산 = 현금 + 보유 부동산 매도가 합계 - 대출잔액
+function getNetWorth(playerIdx) {
+  const cp = state.players[playerIdx];
+  const propValue = allOwnedBy(playerIdx).reduce((sum, {cellId, entry}) => {
+    const bld = getBld(cellId);
+    return sum + (bld ? bld.sell[entry.buildings] : 0);
+  }, 0);
+  return Math.max(0, cp.money) + propValue - (cp.loan || 0);
+}
+
+const WIN_NET_WORTH = 10000000000; // 100억 순자산 달성
+const MAX_LAPS      = 50;          // 50바퀴 (둘 중 높은 쪽 기준)
+
+function checkWinConditions() {
+  if(state.phase === 'gameover') return;
+
+  // 1. 순자산 100억 달성
+  for(let i = 0; i < 2; i++) {
+    if(getNetWorth(i) >= WIN_NET_WORTH) {
+      addLog(`${state.players[i].name}: 순자산 100억 달성! 🏆`, 'important');
+      showGameOverStats(i, 1 - i, '자산목표달성');
+      return;
+    }
+  }
+
+  // 2. 50바퀴 도달 — 순자산 비교
+  const maxLaps = Math.max(state.players[0].laps || 0, state.players[1].laps || 0);
+  if(maxLaps >= MAX_LAPS) {
+    const nw0 = getNetWorth(0);
+    const nw1 = getNetWorth(1);
+    const winner = nw0 >= nw1 ? 0 : 1;
+    addLog(`50바퀴 종료! 순자산 비교 — 나: ${fmt(nw0)} vs AI: ${fmt(nw1)}`, 'important');
+    showGameOverStats(winner, 1 - winner, '턴종료');
+  }
+}
+
+// ==================== TURN END ====================
+function endTurn(isDouble) {
+  state.totalTurns++;
+  state.players[state.currentPlayer].stats.turns++;
+
+  // 승리 조건 체크
+  checkWinConditions();
+  if(state.phase === 'gameover') return;
+
+  if(isDouble && state.doubleCount > 0) {
+    addLog(`더블! 한 번 더 굴립니다.`, 'important');
+    state.phase = 'roll';
+    updateUI();
+    if(state.players[state.currentPlayer].isAI) {
+      setTimeout(() => aiTurn(), 600);
+    }
+    return;
+  }
+
+  state.doubleCount = 0;
+  state.currentPlayer = 1 - state.currentPlayer;
+  announceTurn();
+}
+
+// ==================== AI ====================
+function aiTurn() {
+  if(state.phase !== 'roll') return;
+  const ai = state.players[state.currentPlayer];
+  if(!ai.isAI) return;
+
+  // AI 건물 매매 판단
+  aiUpgradeBuildings();
+  // AI 대출 판단
+  aiLoanIfNeeded();
+
+  addLog('AI가 주사위를 굴립니다...');
+
+  const d1 = Math.floor(Math.random()*6)+1;
+  const d2 = Math.floor(Math.random()*6)+1;
+  const isDouble = d1 === d2;
+  const total = d1 + d2;
+
+  renderDie('die1', d1);
+  renderDie('die2', d2);
+  addLog(`AI: 🎲 ${d1}+${d2}=${total}${isDouble?' (더블!)':''}`);
+
+  setTimeout(() => {
+    if(ai.jailTurns > 0) {
+      handleJailRoll(ai, d1, d2, total, isDouble);
+    } else {
+      if(isDouble) {
+        state.doubleCount++;
+        if(state.doubleCount >= 3) {
+          addLog('AI: 더블 3회! 무인도행!', 'bad');
+          sendToJail(state.currentPlayer);
+          endTurn(false);
+          return;
+        }
+      } else {
+        state.doubleCount = 0;
+      }
+      movePlayer(state.currentPlayer, total, isDouble);
+    }
+  }, 500);
+}
+
+// ==================== INIT ====================
+function init() {
+  buildBoard();
+  renderDie('die1', 1);
+  renderDie('die2', 1);
+  updateUI();
+  addLog('🎲 게임 시작! 행운을 빕니다!', 'important');
+  showWinConditionModal();
+}
+
+function showWinConditionModal() {
+  const content = `
+    <div style="text-align:left;line-height:1.7">
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">
+
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;
+          background:rgba(241,196,15,0.12);border:1px solid rgba(241,196,15,0.35);border-radius:10px">
+          <span style="font-size:1.6rem;line-height:1">🏆</span>
+          <div>
+            <div style="font-weight:bold;margin-bottom:2px">순자산 100억 달성</div>
+            <div style="font-size:0.8rem;color:#aaa">현금 + 부동산 매도가 − 대출잔액이<br>100억을 넘으면 즉시 승리!</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;
+          background:rgba(52,152,219,0.12);border:1px solid rgba(52,152,219,0.35);border-radius:10px">
+          <span style="font-size:1.6rem;line-height:1">⏰</span>
+          <div>
+            <div style="font-weight:bold;margin-bottom:2px">50바퀴 후 순자산 비교</div>
+            <div style="font-size:0.8rem;color:#aaa">50바퀴가 지나면 게임 종료.<br>순자산이 더 많은 플레이어가 승리!</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:12px;
+          background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.35);border-radius:10px">
+          <span style="font-size:1.6rem;line-height:1">💸</span>
+          <div>
+            <div style="font-weight:bold;margin-bottom:2px">파산</div>
+            <div style="font-size:0.8rem;color:#aaa">현금이 마이너스가 되면<br>즉시 패배!</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="padding:10px 12px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.8rem;color:#aaa">
+        💡 <b style="color:#f5c842">시작 자금 1억원</b> · 매 바퀴 직업 변경 및 월급 수령<br>
+        🏦 부동산 담보 대출 가능 (LTV 70%, 연 4.5%)<br>
+        🏠 칸 도착 시 빌라·아파트·빌딩 즉시 매수 선택
+      </div>
+
+    </div>`;
+
+  showModal('🎲 서울 시티 인베스트', content,
+    [{ text: '게임 시작! 🚀', cls: 'btn-yes', cb: () => { closeModal(); announceTurn(); } }]
+  );
+}
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
