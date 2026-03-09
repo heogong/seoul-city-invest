@@ -939,41 +939,52 @@ const COMMUNITY_CARDS = [
 // 편의점 알바 주 5일 8h: 209만 / 배달라이더 250~350만 / 일반 회사원 300~400만
 // IT 개발자 450~600만 / 의사 900~1100만 / 건물주 임대수입 2000만+
 const JOBS = [
-  { name:'취준생',       icon:'📚', salary:0,        desc:'아직 취업 전이에요. 월급이 없습니다.' },
-  { name:'편의점 알바',  icon:'🏪', salary:2100000,  desc:'2026년 최저시급 10,320원, 주 5일 풀타임 209만원.' },
-  { name:'배달 라이더',  icon:'🛵', salary:2800000,  desc:'하루 10시간 풀가동, 플랫폼 수수료 제하고 280만원.' },
-  { name:'프리랜서',     icon:'💻', salary:3500000,  desc:'프로젝트 수주 성공! 이번 달 350만원 수령.' },
-  { name:'일반 회사원',  icon:'👔', salary:3800000,  desc:'중소기업 대리급, 세후 380만원 월급.' },
-  { name:'공무원',       icon:'🏛️', salary:4200000,  desc:'7급 5년차 기준, 수당 포함 세후 420만원.' },
-  { name:'선생님',       icon:'🎓', salary:4500000,  desc:'중등교사 10년차, 수당 포함 세후 450만원.' },
-  { name:'간호사',       icon:'🩺', salary:4800000,  desc:'대형병원 3년차, 야근·당직 수당 포함 480만원.' },
-  { name:'자영업자',     icon:'🍜', salary:4000000,  desc:'동네 식당 사장, 인건비 빼고 이번 달 400만원 순이익.' },
-  { name:'IT 개발자',    icon:'⌨️', salary:5500000,  desc:'중견 IT기업 5년차 개발자, 세후 550만원.' },
-  { name:'약사',         icon:'💊', salary:6000000,  desc:'동네 약국 약사, 세후 600만원 수령.' },
-  { name:'변호사',       icon:'⚖️', salary:8000000,  desc:'중형 로펌 소속, 수임료 포함 세후 800만원.' },
-  { name:'의사',         icon:'🏥', salary:11000000, desc:'전문의 개원의, 세후 1,100만원.' },
-  { name:'부동산 중개사',icon:'🏠', salary:7000000,  desc:'강남 계약 성사! 중개 수수료 700만원 수령.' },
-  { name:'유튜버',       icon:'📹', salary:5000000,  desc:'구독자 50만, 광고·협찬 수입 500만원.' },
-  { name:'스타트업 CEO', icon:'🚀', salary:15000000, desc:'시리즈A 투자 유치 성공! 이번 달 1,500만원.' },
-  { name:'금융 트레이더',icon:'📈', salary:12000000, desc:'증권사 딜링룸, 성과급 포함 1,200만원.' },
-  { name:'연예인',       icon:'🌟', salary:20000000, desc:'CF 계약 성사! 이번 달 2,000만원 수령.' },
-  { name:'건물주',       icon:'🏢', salary:30000000,  desc:'강남 꼬마빌딩 임대 수입 3,000만원!' },
-  { name:'금수저',        icon:'💎', salary:1000000000, desc:'태어날 때부터 부자! 이번 달 수익 10억원.' },
+  { name:'취준생',       icon:'📚', salary:0,           desc:'아직 취업 전이에요. 월급이 없습니다.' },
+  // Grade 10
+  { name:'편의점 알바',  icon:'🏪', salary:2100000,  grade:10, desc:'2026년 최저시급 10,320원, 주 5일 풀타임 210만원.' },
+  { name:'배달 라이더',  icon:'🛵', salary:2500000,  grade:10, desc:'하루 10시간 풀가동, 플랫폼 수수료 제하고 250만원.' },
+  { name:'택배 기사',    icon:'📦', salary:2800000,  grade:10, desc:'하루 200개 배송, 수수료 포함 280만원.' },
+  // Grade 9
+  { name:'프리랜서',     icon:'💻', salary:3500000,  grade:9,  desc:'프로젝트 수주 성공! 이번 달 350만원 수령.' },
+  { name:'일반 회사원',  icon:'👔', salary:3800000,  grade:9,  desc:'중소기업 대리급, 세후 380만원 월급.' },
+  { name:'자영업자',     icon:'🍜', salary:4000000,  grade:9,  desc:'동네 식당 사장, 인건비 빼고 이번 달 400만원 순이익.' },
+  // Grade 8
+  { name:'공무원',       icon:'🏛️', salary:4200000,  grade:8,  desc:'7급 5년차 기준, 수당 포함 세후 420만원.' },
+  { name:'선생님',       icon:'🎓', salary:4500000,  grade:8,  desc:'중등교사 10년차, 수당 포함 세후 450만원.' },
+  { name:'간호사',       icon:'🩺', salary:4800000,  grade:8,  desc:'대형병원 3년차, 야근·당직 수당 포함 480만원.' },
+  // Grade 7
+  { name:'유튜버',       icon:'📹', salary:5000000,  grade:7,  desc:'구독자 50만, 광고·협찬 수입 500만원.' },
+  { name:'IT 개발자',    icon:'⌨️', salary:5500000,  grade:7,  desc:'중견 IT기업 5년차 개발자, 세후 550만원.' },
+  { name:'약사',         icon:'💊', salary:6000000,  grade:7,  desc:'동네 약국 약사, 세후 600만원 수령.' },
+  // Grade 6
+  { name:'부동산 중개사',icon:'🏠', salary:7000000,  grade:6,  desc:'강남 계약 성사! 중개 수수료 700만원 수령.' },
+  { name:'변호사',       icon:'⚖️', salary:8000000,  grade:6,  desc:'중형 로펌 소속, 수임료 포함 세후 800만원.' },
+  { name:'회계사',       icon:'📋', salary:9000000,  grade:6,  desc:'대형 회계법인 소속, 세후 900만원.' },
+  // Grade 5
+  { name:'의사',         icon:'🏥', salary:11000000, grade:5,  desc:'전문의 개원의, 세후 1,100만원.' },
+  { name:'금융 트레이더',icon:'📈', salary:12000000, grade:5,  desc:'증권사 딜링룸, 성과급 포함 1,200만원.' },
+  { name:'펀드매니저',   icon:'💹', salary:14000000, grade:5,  desc:'자산운용사 팀장급, 운용 보수 포함 1,400만원.' },
+  // Grade 4
+  { name:'스타트업 CEO', icon:'🚀', salary:15000000, grade:4,  desc:'시리즈A 투자 유치 성공! 이번 달 1,500만원.' },
+  { name:'연예인',       icon:'🌟', salary:20000000, grade:4,  desc:'CF 계약 성사! 이번 달 2,000만원 수령.' },
+  { name:'대기업 임원',  icon:'🏢', salary:25000000, grade:4,  desc:'대기업 부사장급, 스톡옵션 포함 2,500만원.' },
+  // Grade 3
+  { name:'건물주',       icon:'🏘️', salary:30000000, grade:3,  desc:'강남 꼬마빌딩 임대 수입 3,000만원!' },
+  { name:'투자자',       icon:'💰', salary:40000000, grade:3,  desc:'주식·부동산 투자로 이번 달 4,000만원 수익.' },
+  { name:'스포츠 스타',  icon:'🏆', salary:50000000, grade:3,  desc:'프로 선수 연봉·광고 수입 5,000만원.' },
+  // Grade 2
+  { name:'국회의원',     icon:'🗳️', salary:60000000, grade:2,  desc:'세비·각종 수당 포함 6,000만원.' },
+  { name:'재벌 2세',     icon:'👑', salary:70000000, grade:2,  desc:'그룹 계열사 지분 배당 7,000만원.' },
+  { name:'대기업 CEO',   icon:'🎩', salary:80000000, grade:2,  desc:'글로벌 대기업 CEO, 보너스 포함 8,000만원.' },
+  // Grade 1
+  { name:'슈퍼스타',     icon:'⭐', salary:100000000,grade:1,  desc:'세계적 아티스트! 월 수입 1억원.' },
+  { name:'대재벌',       icon:'🌐', salary:500000000,grade:1,  desc:'재계 서열 5위, 배당·로열티 5억원.' },
 ];
 
-function getRandomJob() {
-  // 금수저: 1/100 확률
-  if(Math.random() < 0.01) return JOBS[JOBS.length - 1];
-  // 취준생·금수저 제외, 가중치: 낮은 급여일수록 자주 등장
-  const pool = JOBS.slice(1, JOBS.length - 1);
-  const weights = pool.map((_, i) => Math.max(1, pool.length - i));
-  const total = weights.reduce((a,b) => a+b, 0);
-  let r = Math.random() * total;
-  for(let i = 0; i < pool.length; i++) {
-    r -= weights[i];
-    if(r <= 0) return pool[i];
-  }
-  return pool[pool.length - 1];
+function getJobForGrade(grade) {
+  const pool = JOBS.filter(j => j.grade === grade);
+  if(!pool.length) return JOBS[0];
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // ==================== GAME STATE ====================
@@ -1445,10 +1456,11 @@ function handleLapCompletion(playerIdx) {
   payLoanInterest(playerIdx);
 
   const oldJob = cp.job;
-  const isJobChangeLap = cp.laps % 2 === 1;
+  const isJobChangeLap = (cp.laps - 1) % 3 === 0;
+  const currentGrade = Math.max(1, 10 - Math.floor((cp.laps - 1) / 3));
   let newJob;
   if(isJobChangeLap) {
-    newJob = getRandomJob();
+    newJob = getJobForGrade(currentGrade);
     cp.job = newJob;
   } else {
     newJob = cp.job;
@@ -1570,8 +1582,10 @@ function resumeLandOn(playerIdx, isDouble) {
     delete cp._pendingJobEvent;
 
     const isNewJob = oldJob.name !== newJob.name;
+    const gradeLabel = newJob.grade ? `<div style="margin-bottom:6px"><span style="display:inline-block;background:#ff9500;color:#fff;font-size:0.7rem;font-weight:800;padding:2px 8px;border-radius:10px">${newJob.grade}등급</span></div>` : '';
     const jobHtml = `
       <div style="text-align:center;padding:8px 0">
+        ${gradeLabel}
         <div style="font-size:2.5rem;margin-bottom:6px">${newJob.icon}</div>
         <div style="font-size:1.2rem;font-weight:800;color:#2c1700;margin-bottom:4px">${newJob.name}</div>
         <div style="font-size:0.85rem;color:#666;margin-bottom:14px">${newJob.desc}</div>
@@ -1894,7 +1908,6 @@ const INCENTIVE_RATE = {
   '금융 트레이더': 4.0,
   '연예인':        5.0,
   '건물주':        3.0,
-  '금수저':       10.0,
 };
 
 function handleIncentive(playerIdx, isDouble) {
@@ -2431,6 +2444,8 @@ function showCellInfoModal(cellId) {
   const list = propEntries(cellId);
   const bld = getBld(cellId);
   const c = COLORS[cell.color] || '#888';
+  const cellPct = state._marketChanges && state._marketChanges[cellId];
+  const prevBld = state._prevBld && state._prevBld[cellId];
 
   // 소유자 정보 (다수 가능)
   let ownerHtml = '';
@@ -2460,13 +2475,18 @@ function showCellInfoModal(cellId) {
     [1,2,3].forEach(i => {
       const isCurrentLvl = list.some(e => e.buildings === i);
       const buyCost = bld.buy[i];
+      const prevBuyCost = prevBld ? prevBld.buy[i] : null;
+      const priceChanged = prevBuyCost !== null && prevBuyCost !== buyCost;
+      const priceHtml = priceChanged
+        ? `<span style="text-decoration:line-through;color:#888;font-size:0.75rem">${fmt(prevBuyCost)}</span><br>${fmt(buyCost)}`
+        : fmt(buyCost);
       const rent = cell.rent[i];
       tableRows += `
         <tr style="background:${isCurrentLvl ? 'rgba(245,200,66,0.15)' : 'transparent'}">
           <td style="padding:5px 8px;border-radius:6px;font-weight:${isCurrentLvl?'bold':'normal'}">
             ${isCurrentLvl ? '▶ ' : ''}${BLD_NAMES[i]}
           </td>
-          <td style="padding:5px 8px;text-align:right;color:#82e0aa">${fmt(buyCost)}</td>
+          <td style="padding:5px 8px;text-align:right;color:#82e0aa;line-height:1.4">${priceHtml}</td>
           <td style="padding:5px 8px;text-align:right;color:#f1948a">${fmt(rent)}</td>
         </tr>`;
     });
@@ -2512,7 +2532,7 @@ function showCellInfoModal(cellId) {
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
         ${cell.color ? `<span style="display:inline-block;width:18px;height:18px;background:${c};border-radius:4px;flex-shrink:0"></span>` : `<span style="font-size:1.4rem">${cell.icon||''}</span>`}
         <div>
-          <div style="font-size:1.05rem;font-weight:bold">${cell.name}</div>
+          <div style="font-size:1.05rem;font-weight:bold">${cell.name}${cellPct ? `<span style="font-size:0.78rem;font-weight:normal;margin-left:6px;color:${cellPct>0?'#82e0aa':'#f1948a'}">${cellPct>0?'▲':'▼'}${Math.abs(cellPct)}%</span>` : ''}</div>
           <div style="font-size:0.78rem;color:#aaa">${cell.color ? cell.color.toUpperCase() + ' 구역' : cell.type}</div>
         </div>
       </div>
@@ -2983,12 +3003,14 @@ function checkMarketFluctuation(triggerPlayerIdx) {
   // 구역별 랜덤 시세 변동: -40% ~ +60% (양수 편향)
   const changes = [];
   state._marketChanges = {};
+  state._prevBld = {};
   Object.keys(CELL_BLD).forEach(id => {
     const r = (Math.random() * 100) - 40;
     const pct = Math.round(r / 10) * 10;
     if(pct === 0) return;
     const factor = 1 + pct / 100;
     const bld = CELL_BLD[id];
+    state._prevBld[id] = { buy: [...bld.buy], sell: [...bld.sell] };
     bld.buy  = bld.buy.map(v => Math.round(v * factor / 10000000) * 10000000);
     bld.sell = bld.sell.map(v => Math.round(v * factor / 10000000) * 10000000);
     const cell = CELLS[+id];
@@ -3211,7 +3233,8 @@ function updateLoanUI() {
   } else {
     loanInfo.style.display = 'none';
   }
-  btnLoan.style.display = isMyTurn ? 'block' : 'none';
+  const hasProps = allOwnedBy(0).length > 0;
+  btnLoan.style.display = (isMyTurn && hasProps) ? 'block' : 'none';
   btnRepay.style.display = (isMyTurn && cp.loan > 0) ? 'block' : 'none';
 }
 
