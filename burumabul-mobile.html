@@ -1361,6 +1361,7 @@ function showModal(title, content, buttons) {
     btn.className = b.cls || 'btn-ok';
     btn.textContent = b.text;
     btn.onclick = () => {
+      btn.onclick = null;
       document.getElementById('modalOverlay').classList.remove('show');
       if(b.cb) b.cb();
     };
