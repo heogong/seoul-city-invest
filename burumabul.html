@@ -843,7 +843,7 @@ const CELLS = [
   { id:9,  name:'화곡동',   type:'prop', color:'lightblue',
     price:1000000000, rent:[1000000,1700000,2700000,3600000,4500000,5600000] },
 
-  { id:10, name:'국세청',   type:'jail',       icon:'🏛️' },
+  { id:10, name:'직업 승급', type:'gradeup',    icon:'🎓' },
 
   // ── PINK: 노원/강북 중급 ──────────────────────────
   // 상계·중계 84㎡ 10~13억 / 방학동 11~14억
@@ -891,7 +891,7 @@ const CELLS = [
   { id:29, name:'신촌',   type:'prop', color:'yellow',
     price:2300000000, rent:[2300000,4200000,6800000,9400000,11800000,14800000] },
 
-  { id:30, name:'세무조사', type:'gotojail',   icon:'👮' },
+  { id:30, name:'자유 주차', type:'free',       icon:'🅿️' },
 
   // ── GREEN: 성동/강남권 ────────────────────────────
   // 성수·왕십리 84㎡ 20~25억 / 압구정 30~40억
@@ -919,24 +919,21 @@ const CELLS = [
 // 💡 카드 금액: 실제 2025~2026년 물가 기준 (억 단위)
 const CHANCE_CARDS = [
   { text: '출발점으로 이동! 월급 수령!', type:'move', target:0, bonus:0 },
-  { text: '국세청 탈출 카드 획득!', type:'jailbreak' },
   { text: '삼성전자 주식 급등! 배당금 5,000만원 수령.', type:'money', amount:50000000 },
   { text: '건물 안전진단 수리비: 집 1채당 3,000만원, 빌딩 1개당 1억원 납부.', type:'repair', house:30000000, hotel:100000000 },
   { text: '코인 투자 수익 실현! 1억원 수령.', type:'money', amount:100000000 },
   { text: '종합소득세 추가 고지: 3,000만원 납부.', type:'money', amount:-30000000 },
-  { text: '세무조사 대상 선정! 국세청으로 직행!', type:'gotojail' },
   { text: '가장 가까운 교통 시설로 이동!', type:'neartransport' },
   { text: '소송 합의금! 상대방에게 5,000만원 수령.', type:'fromopponent', amount:50000000 },
 ];
 
 const COMMUNITY_CARDS = [
-  { text: '국세청 세금 환급! 2,000만원 수령.', type:'money', amount:20000000 },
+  { text: '세금 환급! 2,000만원 수령.', type:'money', amount:20000000 },
   { text: '생일 파티! 상대방에게 1,000만원씩 받습니다.', type:'fromopponent', amount:10000000 },
   { text: '응급실 입원·수술비: 2,000만원 납부.', type:'money', amount:-20000000 },
   { text: '부동산 중개 수수료 수입! 8,000만원 수령.', type:'money', amount:80000000 },
   { text: '과태료 부과: 2,000만원 납부.', type:'money', amount:-20000000 },
   { text: '재산세 고지서 도착: 5,000만원 납부.', type:'money', amount:-50000000 },
-  { text: '국세청 탈출 카드 획득!', type:'jailbreak' },
   { text: '아파트 장기수선충당금 정산: 3,000만원 납부.', type:'money', amount:-30000000 },
   { text: '출발점으로 이동! 월급 수령.', type:'move', target:0, bonus:0 },
   { text: '연말정산 환급! 1,500만원 수령.', type:'money', amount:15000000 },
@@ -1000,9 +997,9 @@ function getJobForGrade(grade) {
 const START_MONEY = 100000000;
 let state = {
   players: [
-    { id:0, name:'나', pos:0, money:START_MONEY, loan:0, jailTurns:0, color:'#e74c3c', icon:'🚀', isAI:false, jailCard:false, laps:0, job: JOBS[0],
+    { id:0, name:'나', pos:0, money:START_MONEY, loan:0, color:'#e74c3c', icon:'🚀', isAI:false, laps:0, gradeBonus:0, job: JOBS[0],
       stats: { totalIncome:0, totalRent:0, totalSalary:0, bestJob:'취준생', turns:0, propsBought:0 } },
-    { id:1, name:'AI', pos:0, money:START_MONEY, loan:0, jailTurns:0, color:'#3498db', icon:'🤖', isAI:true,  jailCard:false, laps:0, job: JOBS[0],
+    { id:1, name:'AI', pos:0, money:START_MONEY, loan:0, color:'#3498db', icon:'🤖', isAI:true,  laps:0, gradeBonus:0, job: JOBS[0],
       stats: { totalIncome:0, totalRent:0, totalSalary:0, bestJob:'취준생', turns:0, propsBought:0 } }
   ],
   props: {},
@@ -1258,10 +1255,8 @@ function updateUI() {
     const prefix = i===0 ? 'my' : 'ai';
     document.getElementById(prefix+'Money').textContent = '💰 ' + fmt(p.money);
     let status = `📍 ${CELLS[p.pos].name}`;
-    if(p.jailTurns > 0) status += ` · 국세청 ${p.jailTurns}턴`;
     const laps = p.laps || 0;
     status += ` · ${laps}바퀴 완주`;
-    if(p.jailCard) status += ' 🃏';
     document.getElementById(prefix+'Status').textContent = status;
 
     const jobEl = document.getElementById(prefix+'Job');
@@ -1417,42 +1412,18 @@ function doRoll() {
   addLog(`${cp.name}: 🎲 ${d1}+${d2}=${total}${isDouble?' (더블!)':''}`);
 
   setTimeout(() => {
-    if(cp.jailTurns > 0) {
-      handleJailRoll(cp, d1, d2, total, isDouble);
-    } else {
-      if(isDouble) {
-        state.doubleCount++;
-        if(state.doubleCount >= 3) {
-          addLog(`${cp.name}: 더블 3회! 세무조사! 🏛️`, 'bad');
-          sendToJail(state.currentPlayer);
-          endTurn(false);
-          return;
-        }
-      } else {
-        state.doubleCount = 0;
+    if(isDouble) {
+      state.doubleCount++;
+      if(state.doubleCount >= 3) {
+        addLog(`${cp.name}: 더블 3회! 한 번 쉽니다.`, 'bad');
+        endTurn(false);
+        return;
       }
-      movePlayer(state.currentPlayer, total, isDouble);
-    }
-  }, 600);
-}
-
-function handleJailRoll(cp, d1, d2, total, isDouble) {
-  if(isDouble) {
-    addLog(`${cp.name}: 더블로 국세청 탈출! 🎉`, 'important');
-    cp.jailTurns = 0;
-    state.doubleCount = 0;
-    movePlayer(state.currentPlayer, total, false);
-  } else {
-    cp.jailTurns--;
-    if(cp.jailTurns <= 0) {
-      addLog(`${cp.name}: 국세청 조사 종료!`);
-      cp.jailTurns = 0;
-      movePlayer(state.currentPlayer, total, false);
     } else {
-      addLog(`${cp.name}: 국세청 조사 중 ${cp.jailTurns}턴 더 대기.`);
-      endTurn(false);
+      state.doubleCount = 0;
     }
-  }
+    movePlayer(state.currentPlayer, total, isDouble);
+  }, 600);
 }
 
 // ==================== MOVEMENT (한 칸씩) ====================
@@ -1465,7 +1436,7 @@ function handleLapCompletion(playerIdx) {
 
   const oldJob = cp.job;
   const isJobChangeLap = (cp.laps - 1) % 3 === 0;
-  const currentGrade = Math.max(1, 10 - Math.floor((cp.laps - 1) / 3));
+  const currentGrade = Math.max(1, 10 - Math.floor((cp.laps - 1) / 3) - (cp.gradeBonus || 0));
   let newJob;
   if(isJobChangeLap) {
     newJob = getJobForGrade(currentGrade);
@@ -1580,40 +1551,34 @@ function processLandOnEvents(playerIdx, isDouble) {
   resumeLandOn(playerIdx, isDouble);
 }
 
+function flushPendingJobEvent(playerIdx, done) {
+  const cp = state.players[playerIdx];
+  if(!cp._pendingJobEvent) { done(); return; }
+  const { newJob, oldJob, salary } = cp._pendingJobEvent;
+  delete cp._pendingJobEvent;
+  const isNewJob = oldJob.name !== newJob.name;
+  const gradeLabel = newJob.grade ? `<div style="margin-bottom:6px"><span style="display:inline-block;background:#ff9500;color:#fff;font-size:0.7rem;font-weight:800;padding:2px 8px;border-radius:10px">${newJob.grade}등급</span></div>` : '';
+  const jobHtml = `
+    <div style="text-align:center;padding:8px 0">
+      ${gradeLabel}
+      <div style="font-size:2.5rem;margin-bottom:6px">${newJob.icon}</div>
+      <div style="font-size:1.2rem;font-weight:800;color:#2c1700;margin-bottom:4px">${newJob.name}</div>
+      <div style="font-size:0.85rem;color:#666;margin-bottom:14px">${newJob.desc}</div>
+      <div style="background:#f5f0e0;border-radius:10px;padding:10px;font-size:0.9rem;color:#2c1700">
+        ${isNewJob ? `<div style="color:#888;font-size:0.78rem;margin-bottom:6px">${oldJob.icon} ${oldJob.name} → ${newJob.icon} ${newJob.name}</div>` : ''}
+        <div style="font-size:1.1rem;font-weight:800;color:#c0392b">
+          💼 월급 +${fmt(salary)}
+        </div>
+      </div>
+    </div>`;
+  const title = isNewJob ? `🎉 직업 변경!` : `💼 월급 수령`;
+  showModal(title, jobHtml, [{ text: '받기 💰', cls: 'btn-ok', cb: done }]);
+}
+
 function resumeLandOn(playerIdx, isDouble) {
   const cp = state.players[playerIdx];
   const cell = CELLS[cp.pos];
-
-  // 직업 변경 이벤트 처리 (플레이어만)
-  if(cp._pendingJobEvent) {
-    const { newJob, oldJob, salary } = cp._pendingJobEvent;
-    delete cp._pendingJobEvent;
-
-    const isNewJob = oldJob.name !== newJob.name;
-    const gradeLabel = newJob.grade ? `<div style="margin-bottom:6px"><span style="display:inline-block;background:#ff9500;color:#fff;font-size:0.7rem;font-weight:800;padding:2px 8px;border-radius:10px">${newJob.grade}등급</span></div>` : '';
-    const jobHtml = `
-      <div style="text-align:center;padding:8px 0">
-        ${gradeLabel}
-        <div style="font-size:2.5rem;margin-bottom:6px">${newJob.icon}</div>
-        <div style="font-size:1.2rem;font-weight:800;color:#2c1700;margin-bottom:4px">${newJob.name}</div>
-        <div style="font-size:0.85rem;color:#666;margin-bottom:14px">${newJob.desc}</div>
-        <div style="background:#f5f0e0;border-radius:10px;padding:10px;font-size:0.9rem;color:#2c1700">
-          ${isNewJob ? `<div style="color:#888;font-size:0.78rem;margin-bottom:6px">${oldJob.icon} ${oldJob.name} → ${newJob.icon} ${newJob.name}</div>` : ''}
-          <div style="font-size:1.1rem;font-weight:800;color:#c0392b">
-            💼 월급 +${fmt(salary)}
-          </div>
-        </div>
-      </div>`;
-
-    const title = isNewJob ? `🎉 직업 변경!` : `💼 월급 수령`;
-    showModal(title, jobHtml, [{
-      text: '받기 💰', cls: 'btn-ok',
-      cb: () => { dispatchCell(playerIdx, isDouble, cell.type); }
-    }]);
-    return;
-  }
-
-  dispatchCell(playerIdx, isDouble, cell.type);
+  flushPendingJobEvent(playerIdx, () => dispatchCell(playerIdx, isDouble, cell.type));
 }
 
 function dispatchCell(playerIdx, isDouble, type) {
@@ -1628,10 +1593,64 @@ function dispatchCell(playerIdx, isDouble, type) {
     case 'incentive': handleIncentive(playerIdx, isDouble); break;
     case 'lotto': handleLotto(playerIdx, isDouble); break;
     case 'cheongak': handleCheongak(playerIdx, isDouble); break;
-    case 'jail': endTurn(isDouble); break;
-    case 'gotojail': sendToJail(playerIdx); endTurn(false); break;
+    case 'gradeup': handleGradeUp(playerIdx, isDouble); break;
+    case 'free': endTurn(isDouble); break;
     case 'coinexchange': handleCoinExchange(playerIdx, isDouble); break;
     default: endTurn(isDouble);
+  }
+}
+
+// ==================== 직업 승급 ====================
+function handleGradeUp(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const effectiveLaps = Math.max(1, cp.laps || 1);
+  const currentGrade = Math.max(1, 10 - Math.floor((effectiveLaps - 1) / 3) - (cp.gradeBonus || 0));
+  const newGrade = Math.max(1, currentGrade - 1);
+
+  if(newGrade < currentGrade) {
+    cp.gradeBonus = (cp.gradeBonus || 0) + 1;
+    const oldJob = cp.job;
+    const newJob = getJobForGrade(newGrade);
+    cp.job = newJob;
+
+    if(!cp.isAI) {
+      const gradeHtml = `
+        <div style="text-align:center;padding:8px 0">
+          <div style="margin-bottom:10px">
+            <span style="background:#aaa;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem">${currentGrade}등급</span>
+            <span style="margin:0 8px;font-size:1.1rem">→</span>
+            <span style="background:#ff9500;color:#fff;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:800">${newGrade}등급 ⬆️</span>
+          </div>
+          <div style="font-size:2.5rem;margin-bottom:6px">${newJob.icon}</div>
+          <div style="font-size:1.2rem;font-weight:800;color:#2c1700;margin-bottom:4px">${newJob.name}</div>
+          <div style="font-size:0.85rem;color:#666;margin-bottom:14px">${newJob.desc}</div>
+          <div style="background:#f5f0e0;border-radius:10px;padding:10px;font-size:0.9rem;color:#555">
+            <div style="color:#888;font-size:0.78rem;margin-bottom:4px">${oldJob.icon} ${oldJob.name} → ${newJob.icon} ${newJob.name}</div>
+            다음 바퀴부터 월급 <span style="font-weight:800;color:#c0392b">${fmt(newJob.salary)}</span>
+          </div>
+        </div>`;
+      showModal('🎓 직업 승급!', gradeHtml, [{ text:'확인 ✅', cls:'btn-ok', cb: () => { updateUI(); endTurn(isDouble); } }]);
+    } else {
+      addLog(`AI: 직업 승급! ${currentGrade}→${newGrade}등급 ${newJob.icon} ${newJob.name}`, 'important');
+      endTurn(isDouble);
+    }
+  } else {
+    // 이미 최고 등급(1등급) — 월급 보너스
+    const bonus = cp.job.salary;
+    cp.money += bonus;
+    if(!cp.isAI) {
+      showModal('🏆 최고 등급!', `
+        <div style="text-align:center;padding:8px 0">
+          <div style="font-size:2.5rem;margin-bottom:8px">🏆</div>
+          <div style="font-size:1rem;margin-bottom:12px;color:#555">이미 최고 등급(1등급)입니다!</div>
+          <div style="background:#f5f0e0;border-radius:10px;padding:10px">
+            <div style="font-size:1.1rem;font-weight:800;color:#c0392b">월급 보너스 +${fmt(bonus)}</div>
+          </div>
+        </div>`, [{ text:'받기 💰', cls:'btn-ok', cb: () => { updateUI(); endTurn(isDouble); } }]);
+    } else {
+      addLog(`AI: 최고 등급 유지, 보너스 +${fmt(bonus)}`, 'important');
+      endTurn(isDouble);
+    }
   }
 }
 
@@ -1889,7 +1908,7 @@ function drawChance(playerIdx, isDouble) {
     endTurn(isDouble);
   } else {
     showModal('❓ 찬스!', cardHtml + `<p>${card.text}</p>`,
-      [{ text:'확인', cls:'btn-ok', cb: () => { applyCard(card, playerIdx); endTurn(isDouble); updateUI(); }}]
+      [{ text:'확인', cls:'btn-ok', cb: () => { applyCard(card, playerIdx); updateUI(); flushPendingJobEvent(playerIdx, () => endTurn(isDouble)); }}]
     );
   }
 }
@@ -1988,7 +2007,7 @@ function drawCommunity(playerIdx, isDouble) {
     endTurn(isDouble);
   } else {
     showModal('🤝 공공기금!', cardHtml,
-      [{ text:'확인', cls:'btn-ok', cb: () => { applyCard(card, playerIdx); endTurn(isDouble); updateUI(); }}]
+      [{ text:'확인', cls:'btn-ok', cb: () => { applyCard(card, playerIdx); updateUI(); flushPendingJobEvent(playerIdx, () => endTurn(isDouble)); }}]
     );
   }
 }
@@ -2125,13 +2144,6 @@ function applyCard(card, playerIdx) {
       renderTokens();
       break;
     }
-    case 'gotojail':
-      sendToJail(playerIdx);
-      break;
-    case 'jailbreak':
-      cp.jailCard = true;
-      addLog(`${cp.name}: 국세청 탈출 카드 획득! 🃏`, 'important');
-      break;
     case 'repair': {
       const houses = allOwnedBy(playerIdx).filter(({entry})=>entry.buildings===1).length;
       const hotels = allOwnedBy(playerIdx).filter(({entry})=>entry.buildings>=2).length;
@@ -2147,7 +2159,7 @@ function applyCard(card, playerIdx) {
     case 'neartransport': {
       const transports = [5, 15, 25, 35];
       const near = transports.find(t => t > cp.pos) || transports[0];
-      if(near <= cp.pos) cp.money += cp.job.salary; // passed go
+      if(near <= cp.pos) handleLapCompletion(playerIdx); // passed go
       cp.pos = near;
       renderTokens();
       break;
@@ -2160,15 +2172,6 @@ function applyCard(card, playerIdx) {
   if(cp.money < 0 && state.phase !== 'gameover') {
     checkBankruptcy(playerIdx, false);
   }
-}
-
-// ==================== JAIL ====================
-function sendToJail(playerIdx) {
-  const cp = state.players[playerIdx];
-  cp.pos = 10;
-  cp.jailTurns = 3;
-  renderTokens();
-  addLog(`${cp.name}: 국세청으로! 🏛️`, 'bad');
 }
 
 // ==================== 코인 거래소 ====================
@@ -2459,8 +2462,8 @@ function showCellInfoModal(cellId) {
   // 특수 칸 별도 처리
   const specialInfo = {
     go:         { title:'🏁 출발', desc:'통과 시 직업 변경 및 월급 수령.\n대출 이자도 이 시점에 납부됩니다.' },
-    jail:       { title:'🏛️ 국세청', desc:'3턴 동안 세무조사로 이동 불가.\n탈출 카드로 즉시 석방 가능.' },
-    gotojail:   { title:'👮 세무조사', desc:'즉시 국세청으로 이동합니다.' },
+    gradeup:    { title:'🎓 직업 승급', desc:'직업 등급을 한 단계 올립니다.\n더 높은 등급의 직업으로 즉시 변경!\n이미 최고 등급(1등급)이면 월급 보너스 지급.' },
+    free:       { title:'🅿️ 자유 주차', desc:'특별한 효과 없이 쉬어갑니다.' },
     coinexchange:{ title:'🪙 코인 거래소', desc:'상장된 코인에 투자 가능!\n투자 후 다음 턴에 수익/손실 결과 공개.\n코인 종류별 리스크 수준 상이.' },
     lotto:      { title:'🎰 로또', desc:'당첨되면 10억원 수령!\n꽝이어도 다음 기회가 있습니다.' },
     cheongak:   { title:'🏠 청약', desc:'원하는 구역의 빌라를 매매가 50% 반값에 구매!\n미소유 구역 중 선택 가능합니다.' },
@@ -3386,22 +3389,17 @@ function aiTurn() {
   addLog(`AI: 🎲 ${d1}+${d2}=${total}${isDouble?' (더블!)':''}`);
 
   setTimeout(() => {
-    if(ai.jailTurns > 0) {
-      handleJailRoll(ai, d1, d2, total, isDouble);
-    } else {
-      if(isDouble) {
-        state.doubleCount++;
-        if(state.doubleCount >= 3) {
-          addLog('AI: 더블 3회! 무인도행!', 'bad');
-          sendToJail(state.currentPlayer);
-          endTurn(false);
-          return;
-        }
-      } else {
-        state.doubleCount = 0;
+    if(isDouble) {
+      state.doubleCount++;
+      if(state.doubleCount >= 3) {
+        addLog('AI: 더블 3회! 한 번 쉽니다.', 'bad');
+        endTurn(false);
+        return;
       }
-      movePlayer(state.currentPlayer, total, isDouble);
+    } else {
+      state.doubleCount = 0;
     }
+    movePlayer(state.currentPlayer, total, isDouble);
   }, 500);
 }
 
