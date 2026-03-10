@@ -3043,6 +3043,13 @@ function checkMarketFluctuation(triggerPlayerIdx) {
   if(state._lastFluctuationLap === maxLaps) return;
   state._lastFluctuationLap = maxLaps;
 
+  // 내 보유 부동산 그룹화
+  const myOwnedById = {};
+  allOwnedBy(0).forEach(({cellId, entry}) => {
+    if(!myOwnedById[cellId]) myOwnedById[cellId] = [];
+    myOwnedById[cellId].push(entry);
+  });
+
   // 구역별 랜덤 시세 변동: -40% ~ +60% (양수 편향)
   const changes = [];
   state._marketChanges = {};
@@ -3058,9 +3065,10 @@ function checkMarketFluctuation(triggerPlayerIdx) {
     bld.sell = bld.sell.map(v => Math.round(v * factor / 10000000) * 10000000);
     const cell = CELLS[+id];
     state._marketChanges[id] = pct;
-    changes.push({ name: cell.name, pct, up: pct > 0 });
+    changes.push({ id, name: cell.name, pct, up: pct > 0 });
   });
 
+  const myChanges = changes.filter(c => myOwnedById[+c.id]);
   const ups   = changes.filter(c => c.up);
   const downs = changes.filter(c => !c.up);
 
@@ -3069,11 +3077,33 @@ function checkMarketFluctuation(triggerPlayerIdx) {
   const downHtml = downs.slice(0,5).map(c =>
     `<span style="color:#f1948a">↓ ${c.name} ${c.pct}%</span>`).join('<br>');
 
+  let myChangesHtml = '';
+  if(myChanges.length > 0) {
+    const rows = myChanges.map(c => {
+      const color = c.up ? '#82e0aa' : '#f1948a';
+      const arrow = c.up ? '↑' : '↓';
+      const sign  = c.up ? '+' : '';
+      const entries = myOwnedById[+c.id];
+      const totalSell = entries.reduce((sum, e) => sum + getBld(+c.id).sell[e.buildings], 0);
+      const countLabel = entries.length > 1 ? ` ×${entries.length}` : '';
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;font-size:0.84rem">
+        <span>${c.name}${countLabel}</span>
+        <span style="color:${color};font-weight:800">${arrow} ${sign}${c.pct}% · 매도 ${fmt(totalSell)}</span>
+      </div>`;
+    }).join('');
+    myChangesHtml = `
+      <div style="background:rgba(245,200,66,0.12);border:1px solid rgba(245,200,66,0.35);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+        <div style="font-size:0.8rem;font-weight:800;color:#f5c842;margin-bottom:6px">🏠 내 보유 부동산 변동</div>
+        ${rows}
+      </div>`;
+  }
+
   const content = `
     <div style="text-align:left">
       <div style="padding:8px 12px;background:rgba(255,255,255,0.06);border-radius:8px;margin-bottom:10px;font-size:0.82rem;color:#aaa">
         📊 ${maxLaps}바퀴 완주 — 서울 부동산 시장이 요동쳤습니다!
       </div>
+      ${myChangesHtml}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:0.82rem;line-height:1.9">
         <div><b style="color:#82e0aa">📈 상승</b><br>${upHtml || '<span style="color:#aaa">없음</span>'}</div>
         <div><b style="color:#f1948a">📉 하락</b><br>${downHtml || '<span style="color:#aaa">없음</span>'}</div>
