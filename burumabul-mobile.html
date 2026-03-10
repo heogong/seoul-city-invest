@@ -816,10 +816,10 @@ const fmt = n => {
   const abs = Math.abs(n);
   const sign = n < 0 ? '-' : '';
   if (abs >= 100000000) {
-    const uk = abs / 100000000;
+    const uk = Math.floor(abs / 100000000);
     const rem = Math.round((abs % 100000000) / 10000);
-    if (rem > 0) return sign + uk.toFixed(0) + '억 ' + rem.toLocaleString('ko-KR') + '만원';
-    return sign + uk.toFixed(0) + '억원';
+    if (rem > 0) return sign + uk + '억 ' + rem.toLocaleString('ko-KR') + '만원';
+    return sign + uk + '억원';
   } else if (abs >= 10000) {
     return sign + Math.round(abs / 10000).toLocaleString('ko-KR') + '만원';
   }
