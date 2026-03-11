@@ -1691,8 +1691,8 @@ function showTakeoverModal(playerIdx, isDouble, opponents, idx) {
 
   if(idx >= opponents.length) {
     if(cp.money < 0) { checkBankruptcy(playerIdx, isDouble); return; }
-    state._landedCellId = cp.pos;
-    showBuyBuildingModal(playerIdx, cp.pos, isDouble);
+    updateUI();
+    endTurn(isDouble);
     return;
   }
 
@@ -1799,7 +1799,11 @@ function handleProp(playerIdx, isDouble) {
     if(bankrupt) return;
   }
 
-  // ── 구매 모달 직접 표시 ──────────────────────────────────
+  // ── 구매 모달 직접 표시 (빈 칸일 때만) ─────────────────────
+  if(propEntries(cp.pos).length > 0) {
+    endTurn(isDouble);
+    return;
+  }
   if(!cp.isAI) {
     state._landedCellId = cp.pos;
     showBuyBuildingModal(playerIdx, cp.pos, isDouble);
@@ -1812,8 +1816,7 @@ function handleProp(playerIdx, isDouble) {
     if(bestLvl > 0) {
       const cost = bld.buy[bestLvl];
       cp.money -= cost;
-      if(!state.props[cp.pos]) state.props[cp.pos] = [];
-      state.props[cp.pos].push({ owner: playerIdx, buildings: bestLvl });
+      state.props[cp.pos] = [{ owner: playerIdx, buildings: bestLvl }];
       trackPropBought(playerIdx, cp.pos, cost);
       addLog(`${cp.name}: ${cell.name} ${BLD_NAMES[bestLvl]} 매수! (${fmt(cost)})`, 'important');
     } else {
@@ -1889,8 +1892,7 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
         const cost = bld.buy[lvl];
         if(cp.money < cost) { alert('자금이 부족합니다!'); return; }
         cp.money -= cost;
-        if(!state.props[cellId]) state.props[cellId] = [];
-        state.props[cellId].push({ owner: playerIdx, buildings: lvl });
+        state.props[cellId] = [{ owner: playerIdx, buildings: lvl }];
         trackPropBought(playerIdx, cellId, cost);
         addLog(`나: ${cell.name} ${BLD_NAMES[lvl]} 매수! (${fmt(cost)})`, 'important');
         closeModal();
@@ -1908,9 +1910,9 @@ function buyProp(playerIdx, cellId) {
   const cp = state.players[playerIdx];
   const bld = getBld(cellId);
   const cost = bld.buy[1];
+  if(propEntries(cellId).length > 0) return; // 단일 소유자 제약
   cp.money -= cost;
-  if(!state.props[cellId]) state.props[cellId] = [];
-  state.props[cellId].push({ owner: playerIdx, buildings: 1 });
+  state.props[cellId] = [{ owner: playerIdx, buildings: 1 }];
   trackPropBought(playerIdx, cellId, cost);
   const bldTag = cell.type === 'prop' ? ' 빌라' : '';
   addLog(`${cp.name}: ${cell.name}${bldTag} 매수! (${fmt(cost)})`, 'important');
