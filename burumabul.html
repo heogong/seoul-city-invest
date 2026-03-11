@@ -1854,10 +1854,21 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
     return;
   }
 
+  const cellPct = state._marketChanges?.[cellId];
+  const prevBld = state._prevBld?.[cellId];
+
   const rows = [1, 2, 3].map(i => {
     const cost = bld.buy[i];
     const affordable = cp.money >= cost;
-    const rent0 = cell.rent ? cell.rent[i] : 0;
+    const rent0 = Math.round(cost * 0.2);
+    const prevCost = prevBld ? prevBld.buy[i] : null;
+    const changed = prevCost !== null && prevCost !== cost;
+    const costHtml = changed
+      ? `<span style="display:block;text-align:right">
+           <span style="text-decoration:line-through;color:#888;font-size:0.7rem">${fmt(prevCost)}</span>
+           <b style="color:${affordable ? '#82e0aa' : '#f1948a'};font-size:0.85rem;margin-left:4px">${fmt(cost)}</b>
+         </span>`
+      : `<b style="color:${affordable ? '#82e0aa' : '#f1948a'};font-size:0.85rem">${fmt(cost)}</b>`;
     return `
       <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:6px;
         cursor:${affordable ? 'pointer' : 'not-allowed'};
@@ -1869,15 +1880,22 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
           <b>${BLD_NAMES[i]}</b>
           <span style="color:#aaa;font-size:0.75rem;margin-left:6px">통행료 ${fmt(rent0)}</span>
         </span>
-        <b style="color:${affordable ? '#82e0aa' : '#f1948a'};font-size:0.85rem">${fmt(cost)}</b>
+        ${costHtml}
       </label>`;
   }).join('');
+
+  const pctBadge = cellPct
+    ? `<span style="font-size:0.75rem;font-weight:700;margin-left:6px;padding:1px 6px;border-radius:10px;
+        background:${cellPct > 0 ? 'rgba(130,224,170,0.15)' : 'rgba(241,148,138,0.15)'};
+        color:${cellPct > 0 ? '#82e0aa' : '#f1948a'}">${cellPct > 0 ? '▲' : '▼'}${Math.abs(cellPct)}%</span>`
+    : '';
 
   showModal(`🏠 ${cell.name} 매매`,
     `<div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
         <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${c}"></span>
         <span style="font-size:0.9rem;color:#aaa">💰 보유액 <b style="color:#f5c842">${fmt(cp.money)}</b></span>
+        ${pctBadge}
       </div>
       <p style="margin-bottom:10px;font-size:0.85rem">부동산 유형을 선택하세요:</p>
       ${rows}
