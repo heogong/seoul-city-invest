@@ -354,16 +354,28 @@
 </div>
 
 <script>
-  function isMobile() {
-    const ua = navigator.userAgent;
-    if (/Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return true;
-    if (navigator.maxTouchPoints > 1 && /Macintosh/i.test(ua)) return true; // iPad
-    return window.innerWidth <= 768;
+  function isTablet(ua) {
+    if (/iPad/i.test(ua)) return true;
+    if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true; // iPad (modern)
+    if (/Android/i.test(ua) && !/Mobile/i.test(ua)) return true; // Android tablet
+    return false;
   }
 
+  function isMobile() {
+    const ua = navigator.userAgent;
+    if (isTablet(ua)) return false; // 태블릿은 데스크톱으로
+    if (/iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return true;
+    if (/Android/i.test(ua) && /Mobile/i.test(ua)) return true;
+    return window.innerWidth < 500;
+  }
+
+  const ua = navigator.userAgent;
+  const tablet = isTablet(ua);
   const mobile = isMobile();
   document.getElementById('deviceLabel').textContent =
-    mobile ? '📱 모바일 화면 감지 — 모바일 버전으로 실행됩니다' : '🖥️ PC 화면 감지 — 데스크톱 버전으로 실행됩니다';
+    mobile  ? '📱 모바일 감지 — 모바일 버전으로 실행됩니다' :
+    tablet  ? '📱 태블릿 감지 — 데스크톱 버전으로 실행됩니다' :
+              '🖥️ PC 감지 — 데스크톱 버전으로 실행됩니다';
 
   function startGame(money) {
     document.getElementById('loadingOverlay').classList.add('show');
