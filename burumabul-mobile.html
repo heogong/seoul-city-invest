@@ -1379,9 +1379,16 @@ function showModal(title, content, buttons) {
     btn.className = b.cls || 'btn-ok';
     btn.textContent = b.text;
     btn.onclick = () => {
-      btn.onclick = null;
-      document.getElementById('modalOverlay').classList.remove('show');
-      if(b.cb) b.cb();
+      if(b.keepOpen) {
+        if(b.cb) b.cb(() => {
+          btn.onclick = null;
+          document.getElementById('modalOverlay').classList.remove('show');
+        });
+      } else {
+        btn.onclick = null;
+        document.getElementById('modalOverlay').classList.remove('show');
+        if(b.cb) b.cb();
+      }
     };
     btns.appendChild(btn);
   });
@@ -2338,17 +2345,20 @@ function handleCoinExchange(playerIdx, isDouble) {
           oninput="this.style.borderColor=+this.value>0&&+this.value<=${cp.money}?'rgba(245,200,66,0.6)':'rgba(231,76,60,0.6)'"
           style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.2);
           background:rgba(255,255,255,0.06);color:#fff;font-size:0.9rem;box-sizing:border-box">
+        <div id="coinError" style="margin-top:6px;font-size:0.78rem;color:#f1948a;min-height:1.2em"></div>
       </div>
     </div>`,
     [
-      { text:'투자 📈', cls:'btn-yes', cb: () => {
+      { text:'투자 📈', cls:'btn-yes', keepOpen: true, cb: (close) => {
+        const errEl = document.getElementById('coinError');
         const sel = document.querySelector('input[name="coin_pick"]:checked');
-        if(!sel) { alert('코인을 선택하세요!'); return; }
+        if(!sel) { errEl.textContent = '코인을 선택하세요!'; return; }
         const coin = listed.find(c => c.name === sel.value);
         const raw = +document.getElementById('coinAmountInput').value;
         const amount = Math.floor(raw / 10000000) * 10000000;
-        if(!amount || amount <= 0) { alert('투자 금액을 입력하세요! (최소 1,000만원)'); return; }
-        if(amount > cp.money) { alert('보유 자금이 부족합니다!'); return; }
+        if(!amount || amount <= 0) { errEl.textContent = '투자 금액을 입력하세요! (최소 1,000만원)'; return; }
+        if(amount > cp.money) { errEl.textContent = '보유 자금이 부족합니다!'; return; }
+        close();
         cp.money -= amount;
         state._coinInvestment = { playerIdx, coin, amount, multiplier: calcCoinMultiplier(coin) };
         addLog(`나: 🪙 ${coin.icon} ${coin.fullName}(${coin.name}) ${fmt(amount)} 투자 — 다음 턴 결과 공개`, 'important');

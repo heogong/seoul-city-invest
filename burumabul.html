@@ -1388,10 +1388,19 @@ function showModal(title, content, buttons) {
     btn.textContent = b.text;
     btn.onclick = () => {
       if(btn.disabled) return;
-      btn.disabled = true;
-      btn.onclick = null;
-      document.getElementById('modalOverlay').classList.remove('show');
-      if(b.cb) b.cb();
+      if(b.keepOpen) {
+        // 모달을 열어둔 채로 cb 실행; cb(close) 형태로 close 함수 전달
+        if(b.cb) b.cb(() => {
+          btn.disabled = true;
+          btn.onclick = null;
+          document.getElementById('modalOverlay').classList.remove('show');
+        });
+      } else {
+        btn.disabled = true;
+        btn.onclick = null;
+        document.getElementById('modalOverlay').classList.remove('show');
+        if(b.cb) b.cb();
+      }
     };
     btns.appendChild(btn);
   });
@@ -1675,6 +1684,83 @@ function handleGradeUp(playerIdx, isDouble) {
   }
 }
 
+// ==================== 상대 부동산 매입/지불 모달 ====================
+function showTakeoverModal(playerIdx, isDouble, opponents, idx) {
+  const cp   = state.players[playerIdx];
+  const cell = CELLS[cp.pos];
+
+  if(idx >= opponents.length) {
+    if(cp.money < 0) { checkBankruptcy(playerIdx, isDouble); return; }
+    state._landedCellId = cp.pos;
+    showBuyBuildingModal(playerIdx, cp.pos, isDouble);
+    return;
+  }
+
+  const e     = opponents[idx];
+  const owner = state.players[e.owner];
+  const bld   = getBld(cp.pos);
+  const sellVal  = bld.sell[e.buildings];
+  const buyPrice = Math.round(sellVal * 1.2);
+  const payPrice = Math.round(buyPrice * 0.2);
+  const canBuy   = cp.money >= buyPrice;
+  const c        = COLORS[cell.color] || '#999';
+
+  const next = () => showTakeoverModal(playerIdx, isDouble, opponents, idx + 1);
+
+  const html = `
+    <div style="text-align:left">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${c}"></span>
+        <b>${cell.name}</b>
+        <span style="background:${c}33;color:${c};padding:1px 8px;border-radius:12px;font-size:0.75rem;border:1px solid ${c}55">${BLD_NAMES[e.buildings]}</span>
+        <span style="font-size:0.78rem;color:#aaa">— ${owner.name} 소유</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <div style="padding:12px;border-radius:10px;
+          background:${canBuy ? 'rgba(130,224,170,0.08)' : 'rgba(255,255,255,0.04)'};
+          border:1.5px solid ${canBuy ? 'rgba(130,224,170,0.3)' : 'rgba(255,255,255,0.12)'}">
+          <div style="font-size:0.75rem;color:#aaa;margin-bottom:4px">🏠 매입 — 소유권 이전</div>
+          <div style="font-size:1.15rem;font-weight:800;color:${canBuy ? '#82e0aa' : '#f1948a'}">${fmt(buyPrice)}</div>
+          <div style="font-size:0.72rem;color:#aaa;margin-top:2px">현재 가치(${fmt(sellVal)})의 120%</div>
+          ${!canBuy ? `<div style="font-size:0.72rem;color:#f1948a;margin-top:4px">⚠️ 잔액 부족 — ${fmt(buyPrice - cp.money)} 필요</div>` : ''}
+        </div>
+        <div style="padding:12px;border-radius:10px;
+          background:rgba(241,148,138,0.07);border:1.5px solid rgba(241,148,138,0.25)">
+          <div style="font-size:0.75rem;color:#aaa;margin-bottom:4px">💸 통행료 지불</div>
+          <div style="font-size:1.15rem;font-weight:800;color:#f1948a">${fmt(payPrice)}</div>
+          <div style="font-size:0.72rem;color:#aaa;margin-top:2px">매입가(${fmt(buyPrice)})의 20%</div>
+        </div>
+      </div>
+      <div style="font-size:0.8rem;color:#aaa;text-align:right">
+        💰 보유: <b style="color:#f5c842">${fmt(cp.money)}</b>
+      </div>
+    </div>`;
+
+  const btns = [];
+  if(canBuy) {
+    btns.push({ text: `매입 🏠 ${fmt(buyPrice)}`, cls: 'btn-yes', cb: () => {
+      cp.money -= buyPrice;
+      owner.money += buyPrice;
+      e.owner = playerIdx;
+      addLog(`나: ${cell.name} [${BLD_NAMES[e.buildings]}] 매입! ${fmt(buyPrice)} → ${owner.name}`, 'important');
+      updateUI();
+      next();
+    }});
+  }
+  btns.push({ text: `지불 💸 ${fmt(payPrice)}`, cls: canBuy ? 'btn-no' : 'btn-ok', cb: () => {
+    const actual = Math.min(payPrice, Math.max(0, cp.money));
+    cp.money -= actual;
+    owner.money += actual;
+    trackRentPaid(playerIdx, actual);
+    addLog(`나: ${cell.name} 통행료 ${fmt(actual)} → ${owner.name}`, 'bad');
+    updateUI();
+    if(cp.money < 0) { checkBankruptcy(playerIdx, isDouble); return; }
+    next();
+  }});
+
+  showModal(`🏠 ${cell.name} — ${owner.name}의 부동산`, html, btns);
+}
+
 // ==================== PROPERTY ====================
 function handleProp(playerIdx, isDouble) {
   const cp   = state.players[playerIdx];
@@ -1683,22 +1769,34 @@ function handleProp(playerIdx, isDouble) {
 
   const others = otherEntries(cp.pos, playerIdx);
 
-  // ── 통행료 정산 ──────────────────────────────────────────
+  // ── 상대방 부동산: 매입 or 지불 ───────────────────────────
   if(others.length > 0) {
-    let totalRent = 0;
-    const rentLog = [];
-    others.forEach(e => {
-      const rent = cell.rent ? cell.rent[e.buildings] : 0;
+    if(!cp.isAI) {
+      showTakeoverModal(playerIdx, isDouble, others, 0);
+      return;
+    }
+    // AI: 매입 여부 결정
+    let bankrupt = false;
+    for(const e of others) {
+      const sellVal = getBld(cp.pos).sell[e.buildings];
+      const buyPrice = Math.round(sellVal * 1.2);
+      const payPrice = Math.round(buyPrice * 0.2);
       const owner = state.players[e.owner];
-      const actual = Math.min(rent, Math.max(0, cp.money - totalRent));
-      totalRent += actual;
-      owner.money += actual;
-      rentLog.push(`${owner.name}[${BLD_NAMES[e.buildings]}] ${fmt(actual)}`);
-    });
-    cp.money -= totalRent;
-    trackRentPaid(playerIdx, totalRent);
-    addLog(`${cp.name}: 통행료 합계 ${fmt(totalRent)} [${rentLog.join(' / ')}]`, 'bad');
-    if(cp.money < 0) { checkBankruptcy(playerIdx, isDouble); return; }
+      if(cp.money >= buyPrice && Math.random() < 0.4) {
+        cp.money -= buyPrice;
+        owner.money += buyPrice;
+        e.owner = playerIdx;
+        addLog(`${cp.name}: ${cell.name} [${BLD_NAMES[e.buildings]}] 매입! ${fmt(buyPrice)} → ${owner.name}`, 'important');
+      } else {
+        const actual = Math.min(payPrice, Math.max(0, cp.money));
+        cp.money -= actual;
+        owner.money += actual;
+        trackRentPaid(playerIdx, actual);
+        addLog(`${cp.name}: ${cell.name} 통행료 ${fmt(actual)} → ${owner.name}`, 'bad');
+        if(cp.money < 0) { checkBankruptcy(playerIdx, isDouble); bankrupt = true; break; }
+      }
+    }
+    if(bankrupt) return;
   }
 
   // ── 구매 모달 직접 표시 ──────────────────────────────────
@@ -2359,17 +2457,20 @@ function handleCoinExchange(playerIdx, isDouble) {
           oninput="this.style.borderColor=+this.value>0&&+this.value<=${cp.money}?'rgba(245,200,66,0.6)':'rgba(231,76,60,0.6)'"
           style="width:100%;padding:8px 12px;border-radius:8px;border:1.5px solid rgba(255,255,255,0.2);
           background:rgba(255,255,255,0.06);color:#fff;font-size:0.9rem;box-sizing:border-box">
+        <div id="coinError" style="margin-top:6px;font-size:0.78rem;color:#f1948a;min-height:1.2em"></div>
       </div>
     </div>`,
     [
-      { text:'투자 📈', cls:'btn-yes', cb: () => {
+      { text:'투자 📈', cls:'btn-yes', keepOpen: true, cb: (close) => {
+        const errEl = document.getElementById('coinError');
         const sel = document.querySelector('input[name="coin_pick"]:checked');
-        if(!sel) { alert('코인을 선택하세요!'); return; }
+        if(!sel) { errEl.textContent = '코인을 선택하세요!'; return; }
         const coin = listed.find(c => c.name === sel.value);
         const raw = +document.getElementById('coinAmountInput').value;
         const amount = Math.floor(raw / 10000000) * 10000000;
-        if(!amount || amount <= 0) { alert('투자 금액을 입력하세요! (최소 1,000만원)'); return; }
-        if(amount > cp.money) { alert('보유 자금이 부족합니다!'); return; }
+        if(!amount || amount <= 0) { errEl.textContent = '투자 금액을 입력하세요! (최소 1,000만원)'; return; }
+        if(amount > cp.money) { errEl.textContent = '보유 자금이 부족합니다!'; return; }
+        close();
         cp.money -= amount;
         state._coinInvestment = { playerIdx, coin, amount, multiplier: calcCoinMultiplier(coin) };
         addLog(`나: 🪙 ${coin.icon} ${coin.fullName}(${coin.name}) ${fmt(amount)} 투자 — 다음 턴 결과 공개`, 'important');
