@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e0d3a"/>
+      <stop offset="100%" stop-color="#0d0820"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe066"/>
+      <stop offset="100%" stop-color="#d4900a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 배경 -->
+  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
+
+  <!-- 테두리 -->
+  <rect width="32" height="32" rx="8" fill="none" stroke="#f5c842" stroke-width="1" opacity="0.25"/>
+
+  <!-- S -->
+  <text x="15.5" y="22"
+        font-family="'Georgia', 'Palatino Linotype', serif"
+        font-size="22" font-weight="700"
+        fill="url(#gold)"
+        text-anchor="middle">S</text>
+
+  <!-- 하단 accent line -->
+  <rect x="8" y="25.5" width="16" height="1.5" rx="0.75" fill="#f5c842" opacity="0.5"/>
+</svg>
