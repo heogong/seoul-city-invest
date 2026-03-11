@@ -2542,13 +2542,18 @@ function showCellInfoModal(cellId) {
         ? `<span style="text-decoration:line-through;color:#888;font-size:0.75rem">${fmt(prevBuyCost)}</span><br>${fmt(buyCost)}`
         : fmt(buyCost);
       const rent = cell.rent[i];
+      const prevRent = prevBld && prevBld.rent ? prevBld.rent[i] : null;
+      const rentChanged = prevRent !== null && prevRent !== rent;
+      const rentHtml = rentChanged
+        ? `<span style="text-decoration:line-through;color:#888;font-size:0.75rem">${fmt(prevRent)}</span><br>${fmt(rent)}`
+        : fmt(rent);
       tableRows += `
         <tr style="background:${isCurrentLvl ? 'rgba(245,200,66,0.15)' : 'transparent'}">
           <td style="padding:5px 8px;border-radius:6px;font-weight:${isCurrentLvl?'bold':'normal'}">
             ${isCurrentLvl ? '▶ ' : ''}${BLD_NAMES[i]}
           </td>
           <td style="padding:5px 8px;text-align:right;color:#82e0aa;line-height:1.4">${priceHtml}</td>
-          <td style="padding:5px 8px;text-align:right;color:#f1948a">${fmt(rent)}</td>
+          <td style="padding:5px 8px;text-align:right;color:#f1948a;line-height:1.4">${rentHtml}</td>
         </tr>`;
     });
   }
@@ -3081,10 +3086,13 @@ function checkMarketFluctuation(triggerPlayerIdx) {
     if(pct === 0) return;
     const factor = 1 + pct / 100;
     const bld = CELL_BLD[id];
-    state._prevBld[id] = { buy: [...bld.buy], sell: [...bld.sell] };
+    const cell = CELLS[+id];
+    state._prevBld[id] = { buy: [...bld.buy], sell: [...bld.sell], rent: cell.rent ? [...cell.rent] : null };
     bld.buy  = bld.buy.map(v => Math.round(v * factor / 10000000) * 10000000);
     bld.sell = bld.sell.map(v => Math.round(v * factor / 10000000) * 10000000);
-    const cell = CELLS[+id];
+    if(cell.rent) {
+      cell.rent = cell.rent.map(v => Math.round(v * factor / 100000) * 100000);
+    }
     state._marketChanges[id] = pct;
     changes.push({ id, name: cell.name, pct, up: pct > 0 });
   });
@@ -3352,12 +3360,122 @@ function aiLoanIfNeeded() {
 
 function checkBankruptcy(playerIdx, isDouble) {
   const cp = state.players[playerIdx];
-  if(cp.money < 0) {
+  if(cp.money >= 0) { endTurn(isDouble); return; }
+
+  const owned = allOwnedBy(playerIdx);
+  if(owned.length === 0) {
+    // 팔 부동산도 없으면 즉시 파산
     addLog(`${cp.name}: 파산! 게임 종료`, 'bad');
     showGameOverStats(1 - playerIdx, playerIdx, '파산');
     return;
   }
-  endTurn(isDouble);
+
+  if(cp.isAI) {
+    // AI: 매도가 높은 순으로 자동 매각
+    owned.sort((a, b) => getBld(b.cellId).sell[b.entry.buildings] - getBld(a.cellId).sell[a.entry.buildings]);
+    for(const { cellId, entryIdx, entry } of owned) {
+      const price = getBld(cellId).sell[entry.buildings];
+      cp.money += price;
+      const list = state.props[cellId];
+      list.splice(entryIdx, 1);
+      if(list.length === 0) delete state.props[cellId];
+      addLog(`${cp.name}: 💸 잔액 부족 — ${CELLS[cellId].name} 긴급 매도 +${fmt(price)}`, 'bad');
+      renderCellOwnership();
+      updateUI();
+      if(cp.money >= 0) break;
+    }
+    if(cp.money < 0) {
+      addLog(`${cp.name}: 파산! 게임 종료`, 'bad');
+      showGameOverStats(1 - playerIdx, playerIdx, '파산');
+    } else {
+      endTurn(isDouble);
+    }
+    return;
+  }
+
+  // 인간 플레이어: 긴급 매도 모달
+  showEmergencySellModal(playerIdx, isDouble);
+}
+
+function showEmergencySellModal(playerIdx, isDouble) {
+  const cp = state.players[playerIdx];
+  const owned = allOwnedBy(playerIdx);
+
+  if(owned.length === 0) {
+    addLog(`${cp.name}: 파산! 게임 종료`, 'bad');
+    showGameOverStats(1 - playerIdx, playerIdx, '파산');
+    return;
+  }
+
+  const deficit = -cp.money;
+  const rows = owned.map(({ cellId, entryIdx, entry }, i) => {
+    const cell = CELLS[cellId];
+    const bld  = getBld(cellId);
+    const lvl  = entry.buildings;
+    const sellPrice = bld.sell[lvl];
+    const col  = COLORS[cell.color] || '#888';
+    const coversMark = sellPrice >= deficit
+      ? `<span style="font-size:0.7rem;color:#82e0aa;margin-left:4px">✓ 복구가능</span>` : '';
+    return `
+      <label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;
+        margin-bottom:6px;background:rgba(231,76,60,0.08);
+        border:1px solid rgba(231,76,60,0.35);cursor:pointer">
+        <input type="radio" name="emergency_sell" value="${i}" style="accent-color:#e74c3c">
+        <span style="display:inline-block;width:10px;height:10px;border-radius:2px;
+          background:${col};flex-shrink:0"></span>
+        <span style="flex:1;font-size:0.85rem">
+          <b>${cell.name}</b>
+          ${cell.type === 'prop' ? `<span style="color:#aaa;font-size:0.75rem;margin-left:4px">[${BLD_NAMES[lvl]}]</span>` : ''}
+          ${coversMark}
+        </span>
+        <b style="color:#82e0aa;font-size:0.85rem">${fmt(sellPrice)}</b>
+      </label>`;
+  }).join('');
+
+  showModal('💸 긴급 매도',
+    `<div>
+      <div style="background:rgba(231,76,60,0.15);border:1px solid rgba(231,76,60,0.5);
+        border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:0.85rem">
+        ⚠️ 잔액이 <b style="color:#e74c3c">${fmt(deficit)}</b> 부족합니다.<br>
+        <span style="color:#aaa;font-size:0.78rem">부동산을 매도해 잔액을 회복하거나, 모두 팔아도 부족하면 파산합니다.</span>
+      </div>
+      <p style="font-size:0.82rem;color:#aaa;margin-bottom:8px">
+        💰 현재 잔액 <b style="color:#e74c3c">${fmt(cp.money)}</b>
+      </p>
+      ${rows}
+    </div>`,
+    [
+      { text:'매도 ✅', cls:'btn-yes', cb: () => {
+        const sel = document.querySelector('input[name="emergency_sell"]:checked');
+        if(!sel) { alert('매도할 부동산을 선택하세요!'); return; }
+        const i = +sel.value;
+        const { cellId, entryIdx, entry } = owned[i];
+        const bld  = getBld(cellId);
+        const cell = CELLS[cellId];
+        const price = bld.sell[entry.buildings];
+        cp.money += price;
+        const list = state.props[cellId];
+        list.splice(entryIdx, 1);
+        if(list.length === 0) delete state.props[cellId];
+        const bldLabel = cell.type === 'prop' ? ` [${BLD_NAMES[entry.buildings]}]` : '';
+        addLog(`나: 💸 긴급 매도 — ${cell.name}${bldLabel} +${fmt(price)}`, 'bad');
+        closeModal();
+        updateUI();
+        renderCellOwnership();
+        // 잔액 회복됐으면 게임 계속, 아직 부족하면 모달 재표시
+        if(cp.money >= 0) {
+          endTurn(isDouble);
+        } else {
+          showEmergencySellModal(playerIdx, isDouble);
+        }
+      }},
+      { text:'파산 선언 💀', cls:'btn-no', cb: () => {
+        closeModal();
+        addLog(`${cp.name}: 파산! 게임 종료`, 'bad');
+        showGameOverStats(1 - playerIdx, playerIdx, '파산');
+      }}
+    ]
+  );
 }
 
 // 순자산 = 현금 + 보유 부동산 매도가 합계 - 대출잔액
