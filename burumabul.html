@@ -994,7 +994,7 @@ function getJobForGrade(grade) {
 
 // ==================== GAME STATE ====================
 // 💡 시작자금 5억: 실제 서울 첫 부동산 구매 시 필요한 초기 종잣돈 수준
-const START_MONEY = 100000000;
+const START_MONEY = +(new URLSearchParams(location.search).get('money')) || 100000000;
 let state = {
   players: [
     { id:0, name:'나', pos:0, money:START_MONEY, loan:0, color:'#e74c3c', icon:'🚀', isAI:false, laps:0, gradeBonus:0, job: JOBS[0],
