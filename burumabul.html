@@ -1801,13 +1801,17 @@ function handleProp(playerIdx, isDouble) {
   }
 
   // ── 구매 모달 (빈 칸 또는 본인 소유 칸) ─────────────────────
+  // 상대 소유 칸(통행료만 낸 경우)은 구매 불가
+  const myEntry0 = myEntries(cp.pos, playerIdx)[0];
+  const cellOwnedByOther = propEntries(cp.pos).length > 0 && !myEntry0;
+  if(cellOwnedByOther) { endTurn(isDouble); return; }
+
   if(!cp.isAI) {
     state._landedCellId = cp.pos;
     showBuyBuildingModal(playerIdx, cp.pos, isDouble);
   } else {
     const bld = getBld(cp.pos);
-    const myEntry = myEntries(cp.pos, playerIdx)[0];
-    const currentLvl = myEntry ? myEntry.buildings : 0;
+    const currentLvl = myEntry0 ? myEntry0.buildings : 0;
     let bestLvl = 0;
     for(let i = 3; i >= 1; i--) {
       if(i > currentLvl && cp.money >= bld.buy[i] * 1.2) { bestLvl = i; break; }
@@ -1857,28 +1861,35 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
 
   const cellPct = state._marketChanges?.[cellId];
   const prevBld = state._prevBld?.[cellId];
+  const myEntry = propEntries(cellId).find(e => e.owner === playerIdx);
+  const currentLvl = myEntry ? myEntry.buildings : 0;
 
   const rows = [1, 2, 3].map(i => {
     const cost = bld.buy[i];
-    const affordable = cp.money >= cost;
+    const isDowngrade = i <= currentLvl;
+    const affordable = !isDowngrade && cp.money >= cost;
+    const enabled = affordable;
     const rent0 = Math.round(cost * 0.2);
     const prevCost = prevBld ? prevBld.buy[i] : null;
     const changed = prevCost !== null && prevCost !== cost;
     const costHtml = changed
       ? `<span style="display:block;text-align:right">
            <span style="text-decoration:line-through;color:#888;font-size:0.7rem">${fmt(prevCost)}</span>
-           <b style="color:${affordable ? '#82e0aa' : '#f1948a'};font-size:0.85rem;margin-left:4px">${fmt(cost)}</b>
+           <b style="color:${enabled ? '#82e0aa' : '#f1948a'};font-size:0.85rem;margin-left:4px">${fmt(cost)}</b>
          </span>`
-      : `<b style="color:${affordable ? '#82e0aa' : '#f1948a'};font-size:0.85rem">${fmt(cost)}</b>`;
+      : `<b style="color:${enabled ? '#82e0aa' : '#f1948a'};font-size:0.85rem">${fmt(cost)}</b>`;
+    const labelSuffix = i === currentLvl ? ' <span style="color:#f5c842;font-size:0.7rem">▶ 현재</span>'
+                      : isDowngrade      ? ' <span style="color:#888;font-size:0.7rem">다운그레이드 불가</span>'
+                      : '';
     return `
       <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:6px;
-        cursor:${affordable ? 'pointer' : 'not-allowed'};
+        cursor:${enabled ? 'pointer' : 'not-allowed'};
         background:rgba(255,255,255,0.05);
         border:1px solid rgba(255,255,255,0.12);
-        opacity:${affordable ? 1 : 0.35}">
-        <input type="radio" name="buy_bld" value="${i}" ${affordable ? '' : 'disabled'} style="accent-color:#f5c842">
+        opacity:${enabled ? 1 : 0.35}">
+        <input type="radio" name="buy_bld" value="${i}" ${enabled ? '' : 'disabled'} style="accent-color:#f5c842">
         <span style="flex:1;font-size:0.85rem">
-          <b>${BLD_NAMES[i]}</b>
+          <b>${BLD_NAMES[i]}</b>${labelSuffix}
           <span style="color:#aaa;font-size:0.75rem;margin-left:6px">통행료 ${fmt(rent0)}</span>
         </span>
         ${costHtml}
