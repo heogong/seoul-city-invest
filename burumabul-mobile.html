@@ -1807,7 +1807,8 @@ function handleProp(playerIdx, isDouble) {
     if(bestLvl > 0) {
       const cost = bld.buy[bestLvl];
       cp.money -= cost;
-      state.props[cp.pos] = [{ owner: playerIdx, buildings: bestLvl }];
+      if(!state.props[cp.pos]) state.props[cp.pos] = [];
+      state.props[cp.pos].push({ owner: playerIdx, buildings: bestLvl });
       trackPropBought(playerIdx, cp.pos, cost);
       addLog(`${cp.name}: ${cell.name} ${BLD_NAMES[bestLvl]} 매수! (${fmt(cost)})`, 'important');
     } else {
@@ -1849,13 +1850,9 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
 
   const cellPct = state._marketChanges?.[cellId];
   const prevBld = state._prevBld?.[cellId];
-  const myEntry = propEntries(cellId).find(e => e.owner === playerIdx);
-  const currentLvl = myEntry ? myEntry.buildings : 0;
-
   const rows = [1, 2, 3].map(i => {
     const cost = bld.buy[i];
-    const isDowngrade = i <= currentLvl;
-    const affordable = !isDowngrade && cp.money >= cost;
+    const affordable = cp.money >= cost;
     const enabled = affordable;
     const rent0 = Math.round(cost * 0.2);
     const prevCost = prevBld ? prevBld.buy[i] : null;
@@ -1866,9 +1863,10 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
            <b style="color:${enabled ? '#82e0aa' : '#f1948a'};font-size:0.85rem;margin-left:4px">${fmt(cost)}</b>
          </span>`
       : `<b style="color:${enabled ? '#82e0aa' : '#f1948a'};font-size:0.85rem">${fmt(cost)}</b>`;
-    const labelSuffix = i === currentLvl ? ' <span style="color:#f5c842;font-size:0.7rem">▶ 현재</span>'
-                      : isDowngrade      ? ' <span style="color:#888;font-size:0.7rem">다운그레이드 불가</span>'
-                      : '';
+    const ownedCount = myEntries(cellId, playerIdx).filter(e => e.buildings === i).length;
+    const labelSuffix = ownedCount > 0
+      ? ` <span style="color:#f5c842;font-size:0.7rem">▶ 보유 ${ownedCount}개</span>`
+      : '';
     return `
       <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:6px;
         cursor:${enabled ? 'pointer' : 'not-allowed'};
@@ -1908,7 +1906,8 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
         const cost = bld.buy[lvl];
         if(cp.money < cost) { alert('자금이 부족합니다!'); return; }
         cp.money -= cost;
-        state.props[cellId] = [{ owner: playerIdx, buildings: lvl }];
+        if(!state.props[cellId]) state.props[cellId] = [];
+        state.props[cellId].push({ owner: playerIdx, buildings: lvl });
         trackPropBought(playerIdx, cellId, cost);
         addLog(`나: ${cell.name} ${BLD_NAMES[lvl]} 매수! (${fmt(cost)})`, 'important');
         closeModal();
