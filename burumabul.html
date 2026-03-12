@@ -1866,7 +1866,7 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
     const cost = bld.buy[i];
     const affordable = cp.money >= cost;
     const enabled = affordable;
-    const rent0 = Math.round(cost * 0.2);
+    const rent0 = Math.round(Math.round(bld.sell[i] * 1.2) * 0.2);
     const prevCost = prevBld ? prevBld.buy[i] : null;
     const changed = prevCost !== null && prevCost !== cost;
     const costHtml = changed
@@ -2721,12 +2721,15 @@ function showCellInfoModal(cellId) {
       const priceHtml = priceChanged
         ? `<span style="text-decoration:line-through;color:#888;font-size:0.75rem">${fmt(prevBuyCost)}</span><br>${fmt(buyCost)}`
         : fmt(buyCost);
-      const rent = cell.rent[i];
-      const prevRent = prevBld && prevBld.rent ? prevBld.rent[i] : null;
-      const rentChanged = prevRent !== null && prevRent !== rent;
-      const rentHtml = rentChanged
-        ? `<span style="text-decoration:line-through;color:#888;font-size:0.75rem">${fmt(prevRent)}</span><br>${fmt(rent)}`
-        : fmt(rent);
+      const toll = Math.round(Math.round(bld.sell[i] * 1.2) * 0.2);
+      const prevSell = prevBld ? prevBld.sell[i] : null;
+      const prevToll = prevSell !== null ? Math.round(Math.round(prevSell * 1.2) * 0.2) : null;
+      const rentChanged = prevToll !== null && prevToll !== toll;
+      const ownedCount = list.filter(e => e.buildings === i).length;
+      const tollBase = rentChanged
+        ? `<span style="text-decoration:line-through;color:#888;font-size:0.75rem">${fmt(prevToll)}</span><br>${fmt(toll)}`
+        : fmt(toll);
+      const rentHtml = ownedCount > 1 ? `${fmt(toll)} ×${ownedCount}` : tollBase;
       tableRows += `
         <tr style="background:${isCurrentLvl ? 'rgba(245,200,66,0.15)' : 'transparent'}">
           <td style="padding:5px 8px;border-radius:6px;font-weight:${isCurrentLvl?'bold':'normal'}">
