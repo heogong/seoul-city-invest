@@ -1905,20 +1905,21 @@ function showBuyBuildingModal(playerIdx, cellId, isDouble) {
       </div>
       <p style="margin-bottom:10px;font-size:0.85rem">부동산 유형을 선택하세요:</p>
       ${rows}
+      <div id="buyPropError" style="color:#e74c3c;font-size:0.85rem;margin-top:8px;min-height:1.2em;text-align:center"></div>
     </div>`,
     [
-      { text: '매수 ✅', cls: 'btn-yes', cb: () => {
+      { text: '매수 ✅', cls: 'btn-yes', keepOpen: true, cb: (close) => {
         const sel = document.querySelector('input[name="buy_bld"]:checked');
-        if(!sel) { showToast('유형을 선택하세요!'); return; }
+        if(!sel) { document.getElementById('buyPropError').textContent = '⚠ 유형을 선택하세요!'; return; }
         const lvl = +sel.value;
         const cost = bld.buy[lvl];
-        if(cp.money < cost) { showToast('자금이 부족합니다!'); return; }
+        if(cp.money < cost) { document.getElementById('buyPropError').textContent = '⚠ 자금이 부족합니다!'; return; }
+        close();
         cp.money -= cost;
         if(!state.props[cellId]) state.props[cellId] = [];
         state.props[cellId].push({ owner: playerIdx, buildings: lvl });
         trackPropBought(playerIdx, cellId, cost);
         addLog(`나: ${cell.name} ${BLD_NAMES[lvl]} 매수! (${fmt(cost)})`, 'important');
-        closeModal();
         updateUI();
         endTurn(isDouble);
       }},
